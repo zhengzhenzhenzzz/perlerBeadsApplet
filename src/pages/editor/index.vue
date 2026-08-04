@@ -41,13 +41,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import Taro from '@tarojs/taro'
 import CustomTabBar from '@/custom-tab-bar/index.vue'
 import MenuBar from './components/menu/index.vue'
 import DrawPanel from './components/drawPanel/index.vue'
 import ToolArea from './components/toolArea/index.vue'
 import MIcon from '@/components/MIcon/index.vue'
+import { isH5 } from '@/utils/platform'
 import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData} from '@/utils/pixelArt'
 import { useEditorTempStore,EditorTempData } from '@/stores/editorTemp'
 import { base64ToArrayBuffer } from '@/utils/base64'
@@ -294,7 +295,16 @@ onMounted(() => {
 
   initPixel()
   
+  // H5 端窗口尺寸变化（调整窗口、旋转屏幕）后重新计算画布尺寸
+  if (isH5) {
+    window.addEventListener('resize', calculateCanvasSize)
+  }
+})
 
+onUnmounted(() => {
+  if (isH5) {
+    window.removeEventListener('resize', calculateCanvasSize)
+  }
 })
 
 defineExpose({

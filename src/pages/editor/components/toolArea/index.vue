@@ -2,19 +2,11 @@
   <view class="tool-area">
     <view v-if="showColorPicker" class="color-picker-section">
       <view class="color-grid">
-        <view class="color-row">
-          <view v-for="(color, index) in colorRow1" :key="'row1-' + index"
-            :class="['color-item', { active: currentColor === color }]" :style="{ backgroundColor: color }"
-            @tap="handleColorSelect(color)">
-            <MIcon v-if="currentColor === color" name="check" :size="18" color="#FFFFFF" />
-          </view>
-        </view>
-        <view class="color-row">
-          <view v-for="(color, index) in colorRow2" :key="'row2-' + index"
-            :class="['color-item', { active: currentColor === color, 'white-color': color === '#FFFFFF' }]"
-            :style="{ backgroundColor: color }" @tap="handleColorSelect(color)">
-            <MIcon v-if="currentColor === color" name="check" :size="18" color="rgba(0,0,0,0.5)" />
-          </view>
+        <view v-for="(color, index) in currentColors" :key="'color-' + index"
+          :class="['color-item', { active: currentColor === color, 'white-color': isLightColor(color) }]"
+          :style="{ backgroundColor: color }" @tap="handleColorSelect(color)">
+          <MIcon v-if="currentColor === color" name="check" :size="18"
+            :color="isLightColor(color) ? 'rgba(0,0,0,0.5)' : '#FFFFFF'" />
         </view>
       </view>
       <view class="color-set-btn" @tap="handleOpenColorSetPanel">
@@ -149,6 +141,19 @@ const colorRow2 = [
   '#9A9A9A', '#6B4C7A', '#F5E6D3', '#87CEEB'
 ]
 
+/** 当前调色板展示的颜色（随颜色集切换而更新） */
+const currentColors = ref<string[]>([...colorRow1, ...colorRow2])
+
+/** 判断颜色是否偏浅，用于决定描边与勾选图标颜色 */
+const isLightColor = (color: string) => {
+  const hex = color.replace('#', '')
+  if (hex.length < 6) return false
+  const r = parseInt(hex.slice(0, 2), 16)
+  const g = parseInt(hex.slice(2, 4), 16)
+  const b = parseInt(hex.slice(4, 6), 16)
+  return r * 0.299 + g * 0.587 + b * 0.114 > 200
+}
+
 const gridSizes = [16, 24, 32, 48, 100]
 
 const colorSets: ColorSet[] = [
@@ -215,12 +220,12 @@ const showColorPicker = computed(() => {
 })
 
 const handleColorSelect = (color: string) => {
-  // currentColor.value = color
-  // emit('update:modelValue', color)
-  // if (currentTool.value === 'eraser') {
-  //   currentTool.value = 'brush'
-  //   emit('toolChange', 'brush')
-  // }
+  currentColor.value = color
+  emit('update:modelValue', color)
+  if (currentTool.value === 'eraser') {
+    currentTool.value = 'brush'
+    emit('toolChange', 'brush')
+  }
 }
 
 const handleGridSizeChange = (size: number) => {
@@ -245,6 +250,7 @@ const handleCloseColorSetPanel = () => {
 
 const handleColorSetSelect = (colorSet: ColorSet) => {
   currentColorSetId.value = colorSet.id
+  currentColors.value = [...colorSet.colors]
   showColorSetPanel.value = false
 
   emit('canvasVisibleChange', true)

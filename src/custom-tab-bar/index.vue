@@ -53,7 +53,8 @@ const switchTab = (item: TabBarItem) => {
 const updateSelected = () => {
   const pages = Taro.getCurrentPages()
   const currentPage = pages[pages.length - 1]
-  const route = currentPage.route || ''
+  // H5 端 route 可能带前导斜杠，统一去掉后再比较
+  const route = (currentPage.route || '').replace(/^\//, '')
   const index = list.value.findIndex(item => item.pagePath === route)
   if (index !== -1) {
     selected.value = index

@@ -285,7 +285,109 @@ const setupCanvasNode = (node: any) => {
     ctx.scale(dpr, dpr)
   }
   
+  if (isH5) {
+    bindMouseEvents(node as HTMLCanvasElement)
+  }
+  
   drawFullGrid()
+}
+
+/** 最近一次触摸时间，用于忽略触屏设备在触摸后合成的鼠标事件 */
+let lastTouchTime = 0
+let isMouseActive = false
+
+/**
+ * H5 端鼠标事件绑定
+ * 桌面浏览器没有触摸事件，补充鼠标绘制、拖拽平移与滚轮缩放能力
+ */
+const bindMouseEvents = (node: HTMLCanvasElement) => {
+  if ((node as any).__mouseBound) return
+  (node as any).__mouseBound = true
+  node.style.touchAction = 'none'
+  node.style.cursor = 'crosshair'
+
+  const toLocal = (e: MouseEvent) => {
+    const rect = node.getBoundingClientRect()
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }
+
+  const handleMouseDown = (e: MouseEvent) => {
+    if (Date.now() - lastTouchTime < 800) return
+    e.preventDefault()
+    isMouseActive = true
+    const { x, y } = toLocal(e)
+
+    if (props.viewOnly || props.currentTool === 'move') {
+      isMovingCanvas = true
+      lastMoveTouch = { x, y }
+    } else {
+      isDrawing = true
+      hasPainted = false
+      const pos = getPixelPosition(x, y)
+      if (pos) {
+        paintPixel(pos.row, pos.col)
+        lastTouchPos = pos
+      } else {
+        isMovingCanvas = true
+        lastMoveTouch = { x, y }
+      }
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isMouseActive) return
+    const { x, y } = toLocal(e)
+
+    if (isMovingCanvas && lastMoveTouch) {
+      offsetX.value += x - lastMoveTouch.x
+      offsetY.value += y - lastMoveTouch.y
+      lastMoveTouch = { x, y }
+      scheduleRender()
+      return
+    }
+
+    if (!isDrawing) return
+    const pos = getPixelPosition(x, y)
+    if (pos) {
+      if (lastTouchPos) {
+        paintLine(lastTouchPos.row, lastTouchPos.col, pos.row, pos.col)
+      } else {
+        paintPixel(pos.row, pos.col)
+      }
+      lastTouchPos = pos
+    }
+  }
+
+  const handleMouseUp = () => {
+    window.removeEventListener('mousemove', handleMouseMove)
+    window.removeEventListener('mouseup', handleMouseUp)
+    if (!isMouseActive) return
+    isMouseActive = false
+    isDrawing = false
+    isMovingCanvas = false
+    lastTouchPos = null
+    lastMoveTouch = null
+    if (hasPainted) {
+      emitPixelData()
+      hasPainted = false
+    }
+  }
+
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    const factor = e.deltaY < 0 ? 1.1 : 0.9
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale.value * factor))
+    if (newScale === scale.value) return
+    scale.value = newScale
+    scheduleRender()
+    needsRebuildBitmap = true
+  }
+
+  node.addEventListener('mousedown', handleMouseDown)
+  node.addEventListener('wheel', handleWheel, { passive: false })
 }
 
 const initCanvas = async () => {
@@ -515,6 +617,7 @@ const normalizeTouch = (touch: any) => {
  * 支持单指绘制、双指缩放和平移操作
  */
 const handleTouchStart = (e: any) => {
+  lastTouchTime = Date.now()
   const touches = Array.from(e.touches || []).map(normalizeTouch)
   
   if (touches.length === 2) {
@@ -646,6 +749,7 @@ const handleTouchMove = (e: any) => {
  * 重置所有触摸相关的状态标志
  */
 const handleTouchEnd = () => {
+  lastTouchTime = Date.now()
   isPinching = false
   isTwoFingerPanning = false
   isDrawing = false
