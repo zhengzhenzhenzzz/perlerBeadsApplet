@@ -1,4 +1,6 @@
 import Taro from '@tarojs/taro'
+import { isH5 } from './platform'
+import { base64ToArrayBuffer } from './base64'
 
 interface PixelArtData {
   gridSize: number
@@ -6,6 +8,9 @@ interface PixelArtData {
 }
 export type PixelArtDataType = PixelArtData
 const HIGH_QUALITY_SIZE = 256
+
+// H5 端通过 createObjectURL 生成的有效临时地址集合，用于校验缩略图是否仍然可用
+const activeBlobUrls = new Set<string>()
 
 function calculateCanvasSize(gridSize: number, highQuality: boolean): number {
   if (!highQuality) {
@@ -17,6 +22,14 @@ function calculateCanvasSize(gridSize: number, highQuality: boolean): number {
 }
 
 async function createOffscreenCanvas(width: number, height: number): Promise<any> {
+  // H5 端直接使用离屏 DOM canvas，无需依赖页面中的 canvas 节点
+  if (isH5) {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    return { canvas, ctx }
+  }
   return new Promise((resolve, reject) => {
     const query = Taro.createSelectorQuery()
     query.select('#exportCanvas')
@@ -35,6 +48,17 @@ async function createOffscreenCanvas(width: number, height: number): Promise<any
   })
 }
 
+/**
+ * 创建可用于 canvas drawImage 的图片对象
+ * H5 端使用原生 Image，小程序端使用 canvas.createImage()
+ */
+function createCanvasImage(canvas: any): any {
+  if (isH5) {
+    return new Image()
+  }
+  return canvas.createImage()
+}
+
 async function drawPixelArtToCanvas(ctx: any, data: PixelArtData, canvasSize: number): Promise<void> {
   const { gridSize, pixelData } = data
   const pixelSize = canvasSize / gridSize
@@ -50,6 +74,10 @@ async function drawPixelArtToCanvas(ctx: any, data: PixelArtData, canvasSize: nu
 }
 
 async function canvasToTempFilePath(canvas: any, quality: number = 0.8): Promise<string> {
+  // H5 端直接导出 dataURL，作为图片地址使用
+  if (isH5) {
+    return canvas.toDataURL('image/png')
+  }
   return new Promise((resolve, reject) => {
     Taro.canvasToTempFilePath({
       canvas: canvas,
@@ -67,6 +95,12 @@ async function canvasToTempFilePath(canvas: any, quality: number = 0.8): Promise
 
 async function canvasToArrayBuffer(canvas: any, quality: number = 0.9): Promise<ArrayBuffer> {
   try {
+    if (isH5) {
+      // H5 端没有文件系统，直接从 dataURL 解析出二进制数据
+      const dataUrl: string = canvas.toDataURL('image/png')
+      const base64 = dataUrl.split(',')[1]
+      return base64ToArrayBuffer(base64)
+    }
     const tempFilePath = await canvasToTempFilePath(canvas, quality)
     
     return new Promise((resolve, reject) => {
@@ -87,7 +121,17 @@ async function canvasToArrayBuffer(canvas: any, quality: number = 0.9): Promise<
   }
 }
 
-async function saveImageToPhotosAlbum(filePath: string): Promise<void> {
+export async function saveImageToPhotosAlbum(filePath: string): Promise<void> {
+  // H5 端无相册概念，降级为浏览器下载图片
+  if (isH5) {
+    const a = document.createElement('a')
+    a.href = filePath
+    a.download = `pixel-art-${Date.now()}.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    return
+  }
   return new Promise((resolve, reject) => {
     Taro.saveImageToPhotosAlbum({
       filePath: filePath,
@@ -178,6 +222,13 @@ export async function convertPixelArtToPngBuffer(data: PixelArtData, highQuality
 
 export async function arrayBufferToTempFilePath(buffer: ArrayBuffer): Promise<string> {
   try {
+    // H5 端没有文件系统，使用 Blob URL 充当临时文件地址
+    if (isH5) {
+      const blob = new Blob([buffer], { type: 'image/png' })
+      const url = URL.createObjectURL(blob)
+      activeBlobUrls.add(url)
+      return url
+    }
     const fs = Taro.getFileSystemManager()
     const tempFilePath = `${Taro.env.USER_DATA_PATH}/temp_${Date.now()}.png`
     
@@ -202,6 +253,12 @@ export async function arrayBufferToTempFilePath(buffer: ArrayBuffer): Promise<st
 
 export async function checkTempFileExists(filePath: string): Promise<boolean> {
   try {
+    if (isH5) {
+      // H5 端 dataURL 恒有效；blob URL 仅在当前会话内有效，其余视为不存在以触发重新生成
+      if (filePath.startsWith('data:')) return true
+      if (filePath.startsWith('blob:')) return activeBlobUrls.has(filePath)
+      return false
+    }
     const fs = Taro.getFileSystemManager()
     return new Promise((resolve) => {
       fs.access({
@@ -280,7 +337,7 @@ export async function pngToPixelArtData(imagePath: string, gridSize: number): Pr
     const { canvas, ctx } = await createOffscreenCanvas(width, height)
     
     return new Promise((resolve, reject) => {
-      const img = canvas.createImage()
+      const img = createCanvasImage(canvas)
       img.onload = () => {
         ctx.drawImage(img, 0, 0, width, height)
         
@@ -359,7 +416,7 @@ export async function imageToPixelArtData(
     const { canvas, ctx } = await createOffscreenCanvas(targetGridSize, targetGridSize)
     
     return new Promise((resolve, reject) => {
-      const img = canvas.createImage()
+      const img = createCanvasImage(canvas)
       img.onload = () => {
         ctx.fillStyle = '#FFFFFF'
         ctx.fillRect(0, 0, targetGridSize, targetGridSize)

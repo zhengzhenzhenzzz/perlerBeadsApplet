@@ -51,7 +51,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import Taro from '@tarojs/taro'
 import DrawPanel from '@/pages/editor/components/drawPanel/index.vue'
-import { arrayBufferToTempFilePath, pngToPixelArtData } from '@/utils/pixelArt'
+import { arrayBufferToTempFilePath, pngToPixelArtData, saveImageToPhotosAlbum } from '@/utils/pixelArt'
 import { PixelArtItemStorage, PixelArtStatus, updatePixelArt } from '@/utils/storage'
 import './index.scss'
 import { base64ToArrayBuffer } from '@/utils/base64'
@@ -124,45 +124,10 @@ const handleExport = async () => {
   try {
     Taro.showLoading({ title: '导出中...' })
     
-    // const tempFilePath = await arrayBufferToTempFilePath(base64ToArrayBuffer(item.value.pngData))
-    const tempFilePath = item.value.pngTempPath
-    await new Promise<void>((resolve, reject) => {
-      Taro.saveImageToPhotosAlbum({
-        filePath: tempFilePath,
-        success: () => {
-          resolve()
-        },
-        fail: (err) => {
-          if (err.errMsg.includes('auth deny')) {
-            Taro.showModal({
-              title: '提示',
-              content: '需要您授权保存相册权限',
-              success: (modalRes) => {
-                if (modalRes.confirm) {
-                  Taro.openSetting({
-                    success: (settingRes) => {
-                      if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                        Taro.saveImageToPhotosAlbum({
-                          filePath: tempFilePath,
-                          success: () => resolve(),
-                          fail: reject
-                        })
-                      } else {
-                        reject(new Error('用户拒绝授权'))
-                      }
-                    }
-                  })
-                } else {
-                  reject(new Error('用户拒绝授权'))
-                }
-              }
-            })
-          } else {
-            reject(err)
-          }
-        }
-      })
-    })
+    // 从原始数据重新生成临时地址，避免 H5 下历史 blob URL 失效
+    const tempFilePath = await arrayBufferToTempFilePath(base64ToArrayBuffer(item.value.pngData))
+    // 保存相册（小程序）/ 下载图片（H5）的分支逻辑已收敛在 saveImageToPhotosAlbum 内部
+    await saveImageToPhotosAlbum(tempFilePath)
     
     Taro.hideLoading()
     Taro.showToast({ title: '导出成功', icon: 'success' })

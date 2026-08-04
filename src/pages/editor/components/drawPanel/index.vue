@@ -2,6 +2,7 @@
   <view class="draw-panel">
     <canvas
       :id="canvasId"
+      :canvas-id="canvasId"
       type="2d"
       :style="{ 
         width: canvasWidth + 'px', 
@@ -30,6 +31,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue'
 import Taro from '@tarojs/taro'
+import { isH5 } from '@/utils/platform'
 import './index.scss'
 
 /**
@@ -113,6 +115,11 @@ const rgbToHex = (r: number, g: number, b: number) => {
 const updateImageUrl = () => {
   if (!offscreenCanvas) return
   try {
+    // H5 端 canvasToTempFilePath 不支持传入 canvas 对象，直接用 toDataURL 导出
+    if (isH5) {
+      imageUrl.value = offscreenCanvas.toDataURL()
+      return
+    }
     Taro.canvasToTempFilePath({
       canvas: offscreenCanvas,
       success: (res) => {
@@ -194,11 +201,18 @@ const scheduleRender = () => {
 }
 
 const reinitOffscreenCanvas = (size: number) => {
-  offscreenCanvas = Taro.createOffscreenCanvas({
-    type: '2d',
-    width: size,
-    height: size
-  })
+  // H5 端 Taro.createOffscreenCanvas 暂不支持，改用 DOM 离屏 canvas
+  if (isH5) {
+    offscreenCanvas = document.createElement('canvas')
+    offscreenCanvas.width = size
+    offscreenCanvas.height = size
+  } else {
+    offscreenCanvas = Taro.createOffscreenCanvas({
+      type: '2d',
+      width: size,
+      height: size
+    })
+  }
   offscreenCtx = offscreenCanvas.getContext('2d')
   if (offscreenCtx) {
     offscreenImageData = offscreenCtx.createImageData(size, size)
@@ -221,6 +235,59 @@ const calculateCellSize = () => {
   }
 }
 
+/**
+ * 获取画布原生节点
+ * 小程序端通过 createSelectorQuery 获取 canvas node；
+ * H5 端 taro-canvas-core 未渲染原生 canvas 子节点且 fields({node:true}) 拿不到节点，
+ * 需手动在包装元素内维护一个原生 canvas
+ */
+const resolveCanvasNode = (cb: (node: any) => void) => {
+  if (isH5) {
+    nextTick(() => {
+      const wrapper = document.querySelector(`#${canvasId}`)
+      if (!wrapper) {
+        cb(null)
+        return
+      }
+      let node = wrapper.querySelector('canvas[data-pixel-canvas]') as HTMLCanvasElement | null
+      if (!node) {
+        node = document.createElement('canvas')
+        node.setAttribute('data-pixel-canvas', '1')
+        node.style.width = '100%'
+        node.style.height = '100%'
+        node.style.display = 'block'
+        wrapper.appendChild(node)
+      }
+      cb(node)
+    })
+    return
+  }
+  const query = Taro.createSelectorQuery()
+  query.select(`#${canvasId}`)
+    .fields({ node: true, size: true })
+    .exec((res) => {
+      cb(res && res[0] ? res[0].node : null)
+    })
+}
+
+/**
+ * 拿到 canvas 节点后的统一初始化逻辑
+ */
+const setupCanvasNode = (node: any) => {
+  if (!node) return
+  canvas = node
+  ctx = canvas.getContext('2d')
+  
+  const dpr = Taro.getSystemInfoSync().pixelRatio || 1
+  canvas.width = canvasWidth.value * dpr
+  canvas.height = canvasHeight.value * dpr
+  if (ctx) {
+    ctx.scale(dpr, dpr)
+  }
+  
+  drawFullGrid()
+}
+
 const initCanvas = async () => {
   calculateCellSize()
   await nextTick()
@@ -231,24 +298,7 @@ const initCanvas = async () => {
   
   initImageBuffer()
   
-  const query = Taro.createSelectorQuery()
-  query.select(`#${canvasId}`)
-    .fields({ node: true, size: true })
-    .exec((res) => {
-      if (res && res[0]) {
-        canvas = res[0].node
-        ctx = canvas.getContext('2d')
-        
-        const dpr = Taro.getSystemInfoSync().pixelRatio || 1
-        canvas.width = canvasWidth.value * dpr
-        canvas.height = canvasHeight.value * dpr
-        if (ctx) {
-          ctx.scale(dpr, dpr)
-        }
-        
-        drawFullGrid()
-      }
-    })
+  resolveCanvasNode(setupCanvasNode)
 }
 
 /**
@@ -445,11 +495,27 @@ const paintLine = (startRow: number, startCol: number, endRow: number, endCol: n
 }
 
 /**
+ * 归一化触摸点坐标
+ * 小程序端触摸对象自带相对画布的 x/y；
+ * H5 端为原生 Touch 对象，需要用 clientX/clientY 换算成画布局部坐标
+ */
+const normalizeTouch = (touch: any) => {
+  if (typeof touch.x === 'number' && typeof touch.y === 'number') {
+    return { x: touch.x, y: touch.y }
+  }
+  const rect = canvas ? (canvas as HTMLCanvasElement).getBoundingClientRect() : null
+  return {
+    x: touch.clientX - (rect ? rect.left : 0),
+    y: touch.clientY - (rect ? rect.top : 0)
+  }
+}
+
+/**
  * 处理触摸开始事件
  * 支持单指绘制、双指缩放和平移操作
  */
 const handleTouchStart = (e: any) => {
-  const touches = e.touches
+  const touches = Array.from(e.touches || []).map(normalizeTouch)
   
   if (touches.length === 2) {
     isDrawing = false
@@ -492,7 +558,7 @@ const handleTouchStart = (e: any) => {
  * 根据当前状态处理缩放、平移或绘制操作
  */
 const handleTouchMove = (e: any) => {
-  const touches = e.touches
+  const touches = Array.from(e.touches || []).map(normalizeTouch)
   
   if (isPinching && touches.length === 2) {
     const currentDistance = getTouchDistance(touches[0], touches[1])
@@ -681,24 +747,7 @@ const reinitCanvas = async () => {
   calculateCellSize()
   await nextTick()
   
-  const query = Taro.createSelectorQuery()
-  query.select(`#${canvasId}`)
-    .fields({ node: true, size: true })
-    .exec((res) => {
-      if (res && res[0]) {
-        canvas = res[0].node
-        ctx = canvas.getContext('2d')
-        
-        const dpr = Taro.getSystemInfoSync().pixelRatio || 1
-        canvas.width = canvasWidth.value * dpr
-        canvas.height = canvasHeight.value * dpr
-        if (ctx) {
-          ctx.scale(dpr, dpr)
-        }
-        
-        drawFullGrid()
-      }
-    })
+  resolveCanvasNode(setupCanvasNode)
 }
 
 defineExpose({

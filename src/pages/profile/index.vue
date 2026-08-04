@@ -103,7 +103,7 @@ import MIcon from '@/components/MIcon/index.vue'
 import './index.scss'
 import { getPixelArtList, deletePixelArt, PixelArtItemStorage, PixelArtStatus, updatePixelArt } from '@/utils/storage'
 import { useEditorTempStore } from '@/stores/editorTemp'
-import { arrayBufferToTempFilePath, upscalePixelArtPng, checkTempFileExists } from '@/utils/pixelArt'
+import { arrayBufferToTempFilePath, upscalePixelArtPng, checkTempFileExists, saveImageToPhotosAlbum } from '@/utils/pixelArt'
 import { base64ToArrayBuffer } from '@/utils/base64'
 
 interface DisplayItem extends PixelArtItemStorage {
@@ -296,41 +296,8 @@ const handleExport = async (item: DisplayItem) => {
     Taro.showLoading({ title: '导出中...' })
     const tempFilePath = await arrayBufferToTempFilePath(base64ToArrayBuffer(item.pngData))
 
-    await new Promise<void>((resolve, reject) => {
-      Taro.saveImageToPhotosAlbum({
-        filePath: tempFilePath,
-        success: () => resolve(),
-        fail: (err) => {
-          if (err.errMsg.includes('auth deny')) {
-            Taro.showModal({
-              title: '提示',
-              content: '需要您授权保存相册权限',
-              success: (modalRes) => {
-                if (modalRes.confirm) {
-                  Taro.openSetting({
-                    success: (settingRes) => {
-                      if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                        Taro.saveImageToPhotosAlbum({
-                          filePath: tempFilePath,
-                          success: () => resolve(),
-                          fail: reject
-                        })
-                      } else {
-                        reject(new Error('用户拒绝授权'))
-                      }
-                    }
-                  })
-                } else {
-                  reject(new Error('用户拒绝授权'))
-                }
-              }
-            })
-          } else {
-            reject(err)
-          }
-        }
-      })
-    })
+    // 保存相册（小程序）/ 下载图片（H5）的分支逻辑已收敛在 saveImageToPhotosAlbum 内部
+    await saveImageToPhotosAlbum(tempFilePath)
 
     Taro.hideLoading()
     Taro.showToast({ title: '导出成功', icon: 'success' })
