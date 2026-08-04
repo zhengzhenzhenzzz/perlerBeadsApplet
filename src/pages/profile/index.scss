@@ -17,6 +17,8 @@ $works-preview-bg: #EBE8E3;
   flex-direction: column;
   min-height: 100vh;
   background-color: $works-bg;
+  padding-left: $side-nav-width;
+  box-sizing: border-box;
 }
 
 .content-wrapper {
@@ -114,7 +116,7 @@ $works-preview-bg: #EBE8E3;
 
 .works-scroll {
   flex: 1;
-  height: calc(100vh - 500px);
+  height: calc(100vh - 317px);
 }
 
 .works-grid {

@@ -9,7 +9,7 @@
       >
         <MIcon 
           :name="item.icon" 
-          :size="20" 
+          :size="18" 
           :color="selected === index ? '#FFFFFF' : '#B5B0A8'"
         />
         <text class="nav-label">{{ item.text }}</text>
