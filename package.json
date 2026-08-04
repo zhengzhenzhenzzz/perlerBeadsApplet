@@ -11,6 +11,8 @@
   },
   "scripts": {
     "bump-version": "node scripts/bump-version.js",
+    "deploy:h5": "node scripts/deploy-h5.js",
+    "deploy:h5:rollback": "node scripts/deploy-h5.js --rollback",
     "build:weapp": "node scripts/bump-version.js && taro build --type weapp",
     "build:swan": "taro build --type swan",
     "build:alipay": "taro build --type alipay",

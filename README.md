@@ -119,6 +119,36 @@ npm run build:h5
 3. 在 `project.config.json` 中修改 `appid` 为你自己的小程序 AppID
 4. 编译后的代码在 `dist/` 目录下
 
+### 6. H5 部署到服务器
+
+部署脚本会完成「构建 → 备份 → 上传 → 原子切换 → 校验」全流程。
+
+首次使用前需配置服务器信息：
+
+```bash
+cp .env.deploy.example .env.deploy
+# 编辑 .env.deploy，填写 DEPLOY_HOST / DEPLOY_USER / DEPLOY_WEBROOT / DEPLOY_DOMAIN
+```
+
+`.env.deploy` 含服务器地址等敏感信息，已在 `.gitignore` 中忽略。
+CI 环境可直接注入同名环境变量（优先级高于该文件），无需落盘。
+
+```bash
+npm run deploy:h5                            # 完整部署
+npm run deploy:h5:rollback                   # 回滚到最近一次备份
+
+node scripts/deploy-h5.js --dry-run          # 只构建预检，不改动服务器
+node scripts/deploy-h5.js --skip-build       # 复用现有 dist
+node scripts/deploy-h5.js --yes              # 跳过交互确认（CI 用）
+node scripts/deploy-h5.js --print-config     # 查看当前生效配置
+node scripts/deploy-h5.js --list-backups     # 查看服务器上的备份
+```
+
+日志默认对服务器地址、域名等做脱敏，需要明文时加 `--show-secrets`。
+
+服务器端要求：nginx 静态托管 + SPA 回退（`try_files $uri $uri/ /index.html`），
+且部署用户对站点目录有 `sudo` 权限。
+
 ## 项目结构
 
 ```
@@ -137,8 +167,9 @@ perlerBeadsApplet/
 │   ├── config/             # 配置文件
 │   └── assets/             # 静态资源
 ├── config/                 # Taro 构建配置
-├── scripts/                # 构建脚本
+├── scripts/                # 构建与部署脚本
 ├── screenshot/             # 项目截图
+├── .env.deploy.example     # 部署配置模板
 ├── package.json            # 项目依赖
 ├── tsconfig.json           # TypeScript 配置
 └── project.config.json     # 微信小程序配置
