@@ -12,27 +12,29 @@
       @zoom-out="handleZoomOut"
     />
     
-    <view class="canvas-wrapper" id="canvasWrapper">
-      <DrawPanel
-        ref="drawPanelRef"
+    <view class="editor-body">
+      <ToolArea
+        v-model="currentColor"
         :grid-size="gridSize"
-        :current-color="currentColor"
-        :current-tool="currentTool"
-        :canvas-width="canvasWidth"
-        :canvas-height="canvasHeight"
-        :hide-mode="hideCanvas"
-        @update:pixel-data="handlePixelDataUpdate"
+        @update:grid-size="handleGridSizeChange"
+        @tool-change="handleToolChange"
+        @canvas-visible-change="setCanvasVisible"
+        @color-set-change="handleColorSetChange"
       />
+
+      <view class="canvas-wrapper" id="canvasWrapper">
+        <DrawPanel
+          ref="drawPanelRef"
+          :grid-size="gridSize"
+          :current-color="currentColor"
+          :current-tool="currentTool"
+          :canvas-width="canvasWidth"
+          :canvas-height="canvasHeight"
+          :hide-mode="hideCanvas"
+          @update:pixel-data="handlePixelDataUpdate"
+        />
+      </view>
     </view>
-    
-    <ToolArea
-      v-model="currentColor"
-      :grid-size="gridSize"
-      @update:grid-size="handleGridSizeChange"
-      @tool-change="handleToolChange"
-      @canvas-visible-change="setCanvasVisible"
-      @color-set-change="handleColorSetChange"
-    />
     <CustomTabBar />
     
     <canvas type="2d" id="exportCanvas" style="position: fixed; left: -9999px; top: -9999px; width: 256px; height: 256px;"></canvas>

@@ -5,12 +5,12 @@
         <view v-for="(color, index) in currentColors" :key="'color-' + index"
           :class="['color-item', { active: currentColor === color, 'white-color': isLightColor(color) }]"
           :style="{ backgroundColor: color }" @tap="handleColorSelect(color)">
-          <MIcon v-if="currentColor === color" name="check" :size="18"
+          <MIcon v-if="currentColor === color" name="check" :size="14"
             :color="isLightColor(color) ? 'rgba(0,0,0,0.5)' : '#FFFFFF'" />
         </view>
       </view>
       <view class="color-set-btn" @tap="handleOpenColorSetPanel">
-        <MIcon name="palette" :size="36" color="#2D2A26" />
+        <MIcon name="palette" :size="26" color="#2D2A26" />
       </view>
     </view>
 
@@ -26,37 +26,37 @@
     <view class="tool-bar">
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'brush' }]" @tap="handleToolChange('brush')">
-          <MIcon name="edit" :size="36" :color="currentTool === 'brush' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="edit" :size="26" :color="currentTool === 'brush' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">画笔</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'eraser' }]" @tap="handleToolChange('eraser')">
-          <MIcon name="delete" :size="36" :color="currentTool === 'eraser' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="delete" :size="26" :color="currentTool === 'eraser' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">橡皮</text>
       </view>
       <!-- <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'fill' }]" @tap="handleToolChange('fill')">
-          <MIcon name="format_color_fill" :size="36" :color="currentTool === 'fill' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="format_color_fill" :size="26" :color="currentTool === 'fill' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">填充</text>
       </view> -->
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'grid' }]" @tap="handleToolChange('grid')">
-          <MIcon name="grid_on" :size="36" :color="currentTool === 'grid' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="grid_on" :size="26" :color="currentTool === 'grid' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">网格</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'select' }]" @tap="handleToolChange('select')">
-          <MIcon name="touch_app" :size="36" :color="currentTool === 'select' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="touch_app" :size="26" :color="currentTool === 'select' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">选择</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'move' }]" @tap="handleToolChange('move')">
-          <MIcon name="open_with" :size="36" :color="currentTool === 'move' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="open_with" :size="26" :color="currentTool === 'move' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">移动</text>
       </view>

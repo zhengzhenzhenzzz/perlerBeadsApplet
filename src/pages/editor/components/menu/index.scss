@@ -4,25 +4,25 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: $spacing-sm $spacing-md;
+  padding: 8px $spacing-md;
   background-color: $background-color-white;
   border-bottom: 2px solid rgba($border-color-dark, 0.2);
-  gap: 22px;
+  gap: 14px;
 }
 
 .menu-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 65px;
-  height: 65px;
+  width: 44px;
+  height: 44px;
   border-radius: $border-radius-base;
   background-color: $background-color-gray;
   
@@ -41,9 +41,9 @@
 }
 
 .menu-label {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 500;
   color: $text-color-secondary;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   text-align: center;
 }
