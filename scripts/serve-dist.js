@@ -51,7 +51,14 @@ http.createServer((req, res) => {
         return
       }
       const ext = path.extname(filePath).toLowerCase()
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+      // 带 hash 的静态资源可长期缓存；其余文件（尤其 index.html）禁用缓存，避免重建后仍加载旧产物
+      const cacheControl = /\/(js|css|static)\//.test(filePath) && /\.[0-9a-f]{8}\./.test(filePath)
+        ? 'public, max-age=31536000, immutable'
+        : 'no-cache, no-store, must-revalidate'
+      res.writeHead(200, {
+        'Content-Type': MIME[ext] || 'application/octet-stream',
+        'Cache-Control': cacheControl
+      })
       res.end(data)
     })
   })

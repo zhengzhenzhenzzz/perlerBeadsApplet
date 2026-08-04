@@ -34,6 +34,12 @@ export default defineConfig<'vite'>(async (merge, { command, mode }) => {
       type: 'vite',
       vitePlugins: []
     },      
+    vite: {
+      build: {
+        // outputRoot 非 vite 默认 dist 相对路径，需显式开启清空，避免旧产物残留导致样式冲突
+        emptyOutDir: true
+      }
+    },
     alias: {
     // 配置 @ 指向 src 目录
     '@': path.resolve(__dirname, '..', 'src'),

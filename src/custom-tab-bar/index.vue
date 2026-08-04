@@ -19,8 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import Taro from '@tarojs/taro'
+import { ref } from 'vue'
+import Taro, { useDidShow } from '@tarojs/taro'
 import MIcon from '@/components/MIcon/index.vue'
 import './index.scss'
 
@@ -61,7 +61,8 @@ const updateSelected = () => {
   }
 }
 
-onMounted(() => {
+// 每次页面显示时同步高亮（覆盖首次加载与 tab 切换两种场景）
+useDidShow(() => {
   updateSelected()
 })
 </script>
