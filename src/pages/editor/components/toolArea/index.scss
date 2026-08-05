@@ -173,6 +173,101 @@
   }
 }
 
+// Mobile Simulator Mode - device-simulator-mobile class
+.editor-page.device-simulator-mobile {
+  .tool-area {
+    display: block;
+    width: 100%;
+    height: auto;
+    flex-shrink: 0;
+    overflow: visible;
+    background-color: transparent;
+    border-right: none;
+    padding: 0;
+    order: 2; // 在 Canvas 之后显示
+    margin-top: 0;
+    
+    // ColorPicker Section - 颜色选择区（位于工具栏顶部）
+    .color-picker-section {
+      padding: 20rpx;
+      background-color: #FFFFFF;
+      border-bottom: 1px solid rgba($border-color-dark, 0.1);
+      
+      .color-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr); /* 5 列均匀分布 */
+        gap: 12rpx;
+        margin-bottom: 0;
+        justify-content: center;
+        
+        .color-item {
+          width: 56rpx;
+          height: 56rpx;
+          flex-shrink: 0;
+        }
+      }
+      
+      .color-set-btn {
+        width: 64rpx;
+        height: 64rpx;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 20rpx;
+      }
+    }
+    
+    // Grid Size Section
+    .grid-size-section {
+      padding: 20rpx;
+      background-color: #FFFFFF;
+      border-bottom: 1px solid rgba($border-color-dark, 0.1);
+      
+      .grid-size-list {
+        gap: 16rpx;
+      }
+    }
+    
+    // ToolBar - 工具按钮水平排列（位于工具栏底部）
+    .tool-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      padding: 28rpx 8rpx;
+      background-color: #FFFFFF;
+      border-top: 1px solid rgba($border-color-dark, 0.1);
+      
+      .tool-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6rpx;
+        min-width: 76rpx;
+        
+        .tool-item {
+          width: 52rpx;
+          height: 52rpx;
+          border-radius: 8rpx;
+          
+          &.active {
+            background-color: $primary-color;
+            border-color: $border-color-dark;
+          }
+          
+          &:active {
+            transform: scale(0.95);
+          }
+        }
+        
+        .tool-label {
+          font-size: 22rpx;
+          letter-spacing: 0.1px;
+        }
+      }
+    }
+  }
+}
+
 .color-set-panel-mask {
   position: fixed;
   top: 0;

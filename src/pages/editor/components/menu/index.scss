@@ -7,22 +7,36 @@
   padding: 8px $spacing-md;
   background-color: $background-color-white;
   border-bottom: 2px solid rgba($border-color-dark, 0.2);
-  gap: 14px;
+  gap: 16px;
+  
+  // Mobile simulator mode optimization
+  .editor-page.device-simulator-mobile & {
+    padding: 12px 16px;
+    gap: 16px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 1001;
+  }
 }
 
 .menu-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 60px;
+  height: 60px;
   border-radius: $border-radius-base;
   background-color: $background-color-gray;
   
@@ -41,9 +55,9 @@
 }
 
 .menu-label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: $text-color-secondary;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.4px;
   text-align: center;
 }

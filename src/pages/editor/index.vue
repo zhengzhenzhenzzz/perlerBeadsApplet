@@ -1,5 +1,8 @@
 <template>
-  <view class="editor-page">
+  <view 
+    class="editor-page" 
+    :class="{ 'device-simulator-mobile': isMobileSimulator }"
+  >
 
     <MenuBar
       @undo="handleUndo"
@@ -35,6 +38,7 @@
         />
       </view>
     </view>
+    
     <CustomTabBar />
     
     <canvas type="2d" id="exportCanvas" style="position: fixed; left: -9999px; top: -9999px; width: 256px; height: 256px;"></canvas>
@@ -66,6 +70,7 @@ const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 const hideCanvas = ref(false)
 const currentColorPalette = ref<string[]>([])
+const isMobileSimulator = ref(false)
 
 const historyStack = ref<string[][]>([])
 const historyIndex = ref(-1)
@@ -254,6 +259,14 @@ const setCanvasVisible = (visible: boolean) => {
   hideCanvas.value = !visible
 }
 
+const checkWindowSize = () => {
+  const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+  const isPortrait = window.innerHeight < window.innerWidth ? false : true
+  
+  // 判断是否处于移动设备模拟器模式：≤480px 且竖屏
+  isMobileSimulator.value = width <= 480 && isPortrait
+}
+
 const calculateCanvasSize = () => {
   const query = Taro.createSelectorQuery()
   query.select('#canvasWrapper').boundingClientRect()
@@ -300,12 +313,19 @@ onMounted(() => {
   // H5 端窗口尺寸变化（调整窗口、旋转屏幕）后重新计算画布尺寸
   if (isH5) {
     window.addEventListener('resize', calculateCanvasSize)
+    window.addEventListener('orientationchange', checkWindowSize)
+    window.addEventListener('resize', checkWindowSize)
+    
+    // 初始化检查
+    checkWindowSize()
   }
 })
 
 onUnmounted(() => {
   if (isH5) {
     window.removeEventListener('resize', calculateCanvasSize)
+    window.removeEventListener('orientationchange', checkWindowSize)
+    window.removeEventListener('resize', checkWindowSize)
   }
 })
 
