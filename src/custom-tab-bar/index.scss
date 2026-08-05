@@ -62,3 +62,57 @@ $nav-text-quaternary: #B5B0A8;
     }
   }
 }
+
+// ============================================
+// H5 设备模拟器优化
+// 当切换到移动设备预览模式时，将 TabBar 移到下方
+// ============================================
+@media screen and (max-width: 800px) and (orientation: portrait) {
+  .bottom-nav-container {
+    top: auto; /* 移除顶部定位 */
+    left: auto; /* 移除左侧定位 */
+    right: 0; /* 靠右对齐（可选）*/
+    bottom: 0; /* 固定在底部 */
+    width: 100%; /* 占满整个宽度 */
+    height: auto; /* 自动高度 */
+    padding: 0;
+    border-right: none; /* 移除右侧边框 */
+    border-top: 2px solid $nav-border-light; /* 顶部添加分割线 */
+    
+    .nav-pill {
+      flex-direction: row; /* 横向排列 */
+      flex-wrap: nowrap;
+      padding: 10px;
+      background-color: transparent; /* 透明背景 */
+      border: none; /* 移除边框 */
+      border-radius: 0;
+      gap: 8px;
+      justify-content: space-around; /* 平均分布 */
+      width: 100%;
+      max-width: 600px; /* 限制最大宽度 */
+      margin: 0 auto; /* 居中显示 */
+      
+      .nav-item {
+        flex-direction: row; /* 图标 + 文字横向排列 */
+        flex: 1; /* 平均分配空间 */
+        padding: 10px 0;
+        gap: 6px;
+        border-radius: 12px;
+        
+        .nav-icon {
+          width: 24px; /* 缩小图标尺寸 */
+          height: 24px;
+        }
+        
+        .nav-label {
+          font-size: 14px; /* 稍微调小字体 */
+          white-space: nowrap;
+        }
+        
+        &.active {
+          background-color: $nav-primary;
+        }
+      }
+    }
+  }
+}

@@ -146,6 +146,33 @@
   text-align: center;
 }
 
+// ============================================
+// H5 设备模拟器优化
+// 当切换到移动设备预览模式时
+// ============================================
+@media screen and (max-width: 800px) and (orientation: portrait) {
+  .tool-item {
+    width: 44px; /* 适中宽度 */
+    height: 44px; /* 适中高度 */
+    border-radius: 8px; /* 圆角稍大 */
+    flex-shrink: 0; /* 防止挤压 */
+    
+    &.active {
+      box-shadow: 0 0 0 2px rgba($border-color-dark, 0.2); /* 选中高亮阴影 */
+    }
+  }
+  
+  .tool-label {
+    font-size: 11px; /* 稍微调小字体 */
+    line-height: 1.1; /* 紧凑行高 */
+  }
+  
+  .color-set-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .color-set-panel-mask {
   position: fixed;
   top: 0;
