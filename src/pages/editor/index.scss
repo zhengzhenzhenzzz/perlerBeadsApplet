@@ -9,6 +9,14 @@
   box-sizing: border-box;
 }
 
+// ===== 桌面浏览器通用样式 =====
+@media screen and (min-width: 481px) {
+  .editor-page.device-simulator-mobile {
+    // 保持桌面端原有布局（左侧边栏）
+    padding-left: $side-nav-width;
+  }
+}
+
 .editor-header {
   display: flex;
   align-items: center;
@@ -62,6 +70,11 @@
 // ===== 移动设备模拟器模式样式 =====
 @media screen and (max-width: 480px) and (orientation: portrait) {
   .editor-page.device-simulator-mobile {
+    // 移除左侧边栏间距，占满全屏
+    padding-left: 0;
+    justify-content: center;
+    overflow-x: hidden;
+    
     // MenuBar - 顶部固定
     .menu-bar {
       position: fixed;
@@ -69,16 +82,20 @@
       left: 0;
       right: 0;
       z-index: 1001;
-      height: 70px; /* 增加高度，让按钮更大更美观 */
+      height: 70px;
     }
     
     // Editor body - Canvas + ToolArea + TabBar
     .editor-body {
       display: flex;
       flex-direction: column;
-      min-height: calc(100vh - 60px); // 最小高度：减去 MenuBar 高度
+      width: 100%;
+      max-width: none; /* 不限制最大宽度 */
+      margin: 0; /* 无左右边距 */
+      min-height: calc(100vh - 150px); /* MenuBar + TabBar 总高度 */
       overflow-y: auto;
       overflow-x: hidden;
+      padding-bottom: 80px; /* 为固定的 TabBar 留出空间 */
     }
     
     // Canvas 占据主要空间（位于顶部）
@@ -88,7 +105,7 @@
       align-items: center;
       justify-content: center;
       min-height: 0;
-      padding: 12rpx;
+      padding: 0; /* 移除 Canvas 内边距 */
       order: 1; // Canvas 在前显示
     }
     
@@ -96,20 +113,21 @@
     .tool-area {
       width: 100%;
       flex-shrink: 0;
-      margin-top: 20rpx;
+      margin-top: 0; /* 紧贴 Canvas */
       background-color: #FFFFFF;
-      box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+      box-shadow: 0 0 10rpx rgba(0, 0, 0, 0.05); /* 减小小阴影 */
       order: 2; // 在 Canvas 之后显示
+      border-radius: 0; /* 移除圆角，紧密贴合 */
       
       // ColorPicker Section - 颜色选择区（位于工具栏顶部）
       .color-picker-section {
-        padding: 20rpx;
+        padding: 12rpx; /* 减小内边距 */
         border-bottom: 1px solid rgba($border-color-dark, 0.1);
         
         .color-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr); /* 5 列均匀分布 */
-          gap: 12rpx;
+          gap: 8rpx; /* 减小间隙 */
           margin-bottom: 0;
         }
         
@@ -121,11 +139,11 @@
       
       // Grid Size Section
       .grid-size-section {
-        padding: 20rpx;
+        padding: 12rpx; /* 减小内边距 */
         border-bottom: 1px solid rgba($border-color-dark, 0.1);
         
         .grid-size-list {
-          gap: 12rpx;
+          gap: 8rpx; /* 减小间隙 */
         }
       }
       
@@ -135,20 +153,20 @@
         flex-direction: row;
         justify-content: space-around;
         align-items: center;
-        padding: 24rpx 8rpx;
+        padding: 12rpx 8rpx; /* 减小上内边距 */
         border-top: 1px solid rgba($border-color-dark, 0.1);
         
         .tool-wrapper {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 8rpx;
+          padding: 4rpx; /* 减小内边距 */
           min-width: 70rpx;
           
           .tool-item {
             width: 52rpx;
             height: 52rpx;
-            margin-bottom: 8rpx;
+            margin-bottom: 4rpx; /* 减小间距 */
           }
           
           .tool-label {

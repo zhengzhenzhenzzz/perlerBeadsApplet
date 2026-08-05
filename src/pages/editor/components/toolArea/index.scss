@@ -186,6 +186,7 @@
     padding: 0;
     order: 2; // 在 Canvas 之后显示
     margin-top: 0;
+    margin-bottom: 80px; /* 为固定的 TabBar 留出空间 */
     
     // ColorPicker Section - 颜色选择区（位于工具栏顶部）
     .color-picker-section {

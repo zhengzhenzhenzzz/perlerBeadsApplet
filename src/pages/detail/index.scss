@@ -5,6 +5,41 @@
   background-color: $background-color;
 }
 
+// ===== 桌面浏览器通用样式 =====
+@media screen and (min-width: 481px) {
+  .detail-page.device-simulator-mobile {
+    // 保持桌面端原有布局
+    max-width: none;
+  }
+}
+
+// ===== 移动设备模拟器模式样式 =====
+@media screen and (max-width: 480px) and (orientation: portrait) {
+  .detail-page.device-simulator-mobile {
+    // 移除左侧边栏间距，占满全屏
+    padding-left: 0;
+    justify-content: center;
+    overflow-x: hidden;
+    
+    // Canvas container - 占满全屏
+    .canvas-container {
+      width: 100%;
+      max-width: none; /* 不限制最大宽度 */
+      margin: 0; /* 无左右边距 */
+      padding: $spacing-base 0;
+    }
+    
+    // Info section - 占满全屏
+    .info-section {
+      width: 100%;
+      max-width: none; /* 不限制最大宽度 */
+      margin: 0; /* 无左右边距 */
+      border-radius: $border-radius-xl $border-radius-xl 0 0;
+      margin-top: -$spacing-base;
+    }
+  }
+}
+
 .canvas-container {
   background-color: $background-color-white;
   padding: $spacing-base 0;
