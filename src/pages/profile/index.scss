@@ -187,16 +187,44 @@ $works-preview-bg: #EBE8E3;
 
   .work-info {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 112px;
-    padding: 22px 30px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    min-height: 112px;
+    padding: 20px 30px;
 
-    .work-title {
-      font-size: 30px;
-      font-weight: 700;
-      color: $works-text-primary;
-      font-family: 'DM Sans', sans-serif;
+    .work-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+
+      .work-title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 30px;
+        font-weight: 700;
+        color: $works-text-primary;
+        font-family: 'DM Sans', sans-serif;
+      }
+
+      .delete-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: $works-preview-bg;
+
+        &:active {
+          background-color: rgba($works-primary, 0.15);
+        }
+      }
     }
 
     .work-meta {

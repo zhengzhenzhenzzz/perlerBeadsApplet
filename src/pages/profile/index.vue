@@ -51,7 +51,12 @@
               </view>
             </view>
             <view class="work-info">
-              <text class="work-title">{{ item.title }}</text>
+              <view class="work-title-row">
+                <text class="work-title">{{ item.title }}</text>
+                <view class="delete-btn" @tap.stop="handleDelete(item)">
+                  <MIcon name="delete" :size="24" color="#8C8780" />
+                </view>
+              </view>
               <view class="work-meta">
                 <view class="tag-list">
                   <text v-for="(tag, idx) in item.tags.slice(0, 2)" :key="idx" class="tag">{{ tag }}</text>
