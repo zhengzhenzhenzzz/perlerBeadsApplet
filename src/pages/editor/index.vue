@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import CustomTabBar from '@/custom-tab-bar/index.vue'
 import MenuBar from './components/menu/index.vue'
 import DrawPanel from './components/drawPanel/index.vue'
@@ -279,36 +279,58 @@ const calculateCanvasSize = () => {
 }
 
 
-const initPixel = async () => {
-    
-  const { getTempData ,clearTempData} = useEditorTempStore()
-  const tempData = getTempData()
-  
-  if (tempData) {
-    gridSize.value = tempData.gridSize
-    const tempFilePath = await arrayBufferToTempFilePath(tempData.pngBuffer)
-    const editorData = await pngToPixelArtData(tempFilePath, tempData.gridSize)
-    console.log('editorData',editorData);
-    pixelData.value = editorData.pixelData
-    gridSize.value = editorData.gridSize
-    clearTempData()
-  } else {
-    const initialData = new Array(gridSize.value * gridSize.value).fill('#FFFFFF')
-    pixelData.value = initialData
-  }
-
-    saveToHistory()
+const renderPixelData = () => {
+  saveToHistory()
   nextTick(() => {
     calculateCanvasSize()
-    if (tempData && drawPanelRef.value) {
+    if (drawPanelRef.value) {
       drawPanelRef.value.setPixelData(pixelData.value)
     }
   })
 }
 
+const applyTempData = async (): Promise<boolean> => {
+  const { getTempData, clearTempData } = useEditorTempStore()
+  const tempData = getTempData()
+  clearTempData()
+
+  if (!tempData) return false
+
+  gridSize.value = tempData.gridSize
+  const tempFilePath = await arrayBufferToTempFilePath(tempData.pngBuffer)
+  const editorData = await pngToPixelArtData(tempFilePath, tempData.gridSize)
+  pixelData.value = editorData.pixelData
+  gridSize.value = editorData.gridSize
+  return true
+}
+
+const initCanvas = async (): Promise<void> => {
+  const loaded = await applyTempData()
+  if (!loaded) {
+    const initialData = new Array(gridSize.value * gridSize.value).fill('#FFFFFF')
+    pixelData.value = initialData
+  }
+  renderPixelData()
+}
+
+// 首次挂载时 onMounted 与 useDidShow 都会触发，用 promise 去重避免重复初始化
+let initPromise: Promise<void> | null = null
+
+const ensureCanvasInit = (): Promise<void> => {
+  if (!initPromise) {
+    initPromise = initCanvas()
+  } else {
+    // 页面已初始化过：仅当存在临时数据（从作品页跳转继续编辑）时加载
+    applyTempData().then((loaded) => {
+      if (loaded) renderPixelData()
+    })
+  }
+  return initPromise
+}
+
 onMounted(() => {
 
-  initPixel()
+  ensureCanvasInit()
   
   // H5 端窗口尺寸变化（调整窗口、旋转屏幕）后重新计算画布尺寸
   if (isH5) {
@@ -319,6 +341,10 @@ onMounted(() => {
     // 初始化检查
     checkWindowSize()
   }
+})
+
+useDidShow(() => {
+  ensureCanvasInit()
 })
 
 onUnmounted(() => {
