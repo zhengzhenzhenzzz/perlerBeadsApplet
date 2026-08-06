@@ -82,7 +82,7 @@
       left: 0;
       right: 0;
       z-index: 1001;
-      height: 70px;
+      height: 104px;
     }
     
     // Editor body - Canvas + ToolArea + TabBar
@@ -92,10 +92,11 @@
       width: 100%;
       max-width: none; /* 不限制最大宽度 */
       margin: 0; /* 无左右边距 */
-      min-height: calc(100vh - 150px); /* MenuBar + TabBar 总高度 */
+      min-height: calc(100vh - 204px); /* MenuBar + TabBar 总高度 */
       overflow-y: auto;
       overflow-x: hidden;
-      padding-bottom: 80px; /* 为固定的 TabBar 留出空间 */
+      padding-top: 104px; /* 为固定的 MenuBar 留出空间 */
+      padding-bottom: 100px; /* 为固定的 TabBar 留出空间，保证工具行文字完整显示 */
     }
     
     // Canvas 占据主要空间（位于顶部）
@@ -125,10 +126,11 @@
         border-bottom: 1px solid rgba($border-color-dark, 0.1);
         
         .color-grid {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr); /* 5 列均匀分布 */
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap; /* 按现有间距换行排列 */
           gap: 8rpx; /* 减小间隙 */
-          margin-bottom: 0;
+          justify-content: flex-start;
         }
         
         .color-set-btn {
@@ -153,7 +155,7 @@
         flex-direction: row;
         justify-content: space-around;
         align-items: center;
-        padding: 12rpx 8rpx; /* 减小上内边距 */
+        padding: 12rpx 8rpx 16rpx; /* 底部留出空间，保证文字完整显示 */
         border-top: 1px solid rgba($border-color-dark, 0.1);
         
         .tool-wrapper {
@@ -161,16 +163,16 @@
           flex-direction: column;
           align-items: center;
           padding: 4rpx; /* 减小内边距 */
-          min-width: 70rpx;
+          min-width: 60px;
           
           .tool-item {
-            width: 52rpx;
-            height: 52rpx;
+            width: 64px; /* 与顶部菜单按钮(.menu-item 64px)大小一致 */
+            height: 64px;
             margin-bottom: 4rpx; /* 减小间距 */
           }
           
           .tool-label {
-            font-size: 22rpx;
+            font-size: 16px; /* 与顶部菜单文字(.menu-label 16px)大小一致 */
           }
         }
       }

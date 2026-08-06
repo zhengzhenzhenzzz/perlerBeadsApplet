@@ -2,49 +2,49 @@
   <view class="menu-bar">
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleUndo">
-        <MIcon name="undo" :size="30" color="#5C5852" />
+        <MIcon name="undo" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">撤销</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleRedo">
-        <MIcon name="redo" :size="30" color="#5C5852" />
+        <MIcon name="redo" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">重做</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleClear">
-        <MIcon name="cancel" :size="30" color="#5C5852" />
+        <MIcon name="cancel" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">清空</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleSave">
-        <MIcon name="save" :size="30" color="#5C5852" />
+        <MIcon name="save" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">保存</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleExport">
-        <MIcon name="get_app" :size="30" color="#5C5852" />
+        <MIcon name="get_app" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">导出</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleImport">
-        <MIcon name="publish" :size="30" color="#5C5852" />
+        <MIcon name="publish" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">导入</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleZoomOut">
-        <MIcon name="zoom_out" :size="30" color="#5C5852" />
+        <MIcon name="zoom_out" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">缩小</text>
     </view>
     <view class="menu-wrapper">
       <view class="menu-item" @tap="handleZoomIn">
-        <MIcon name="zoom_in" :size="30" color="#5C5852" />
+        <MIcon name="zoom_in" :size="32" color="#5C5852" />
       </view>
       <text class="menu-label">放大</text>
     </view>

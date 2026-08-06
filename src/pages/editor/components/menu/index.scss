@@ -11,16 +11,53 @@
   
   // Mobile simulator mode optimization
   .editor-page.device-simulator-mobile & {
-    padding: 12px 16px;
-    gap: 16px;
+    padding: 8px;
+    gap: 14px;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 70px;
+    height: 104px;
     width: 100%;
     box-sizing: border-box;
     z-index: 1001;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    // 隐藏滚动条，保持简洁美观
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // 整组按钮：放得下时水平居中，放不下时可横向滚动（首尾 margin auto 技巧）
+    .menu-wrapper {
+      flex-shrink: 0;
+      gap: 6px;
+    }
+
+    .menu-wrapper:first-child {
+      margin-left: auto;
+    }
+
+    .menu-wrapper:last-child {
+      margin-right: auto;
+    }
+
+    // 放大按钮尺寸，减少左右两侧留白
+    .menu-item {
+      width: 64px;
+      height: 64px;
+    }
+
+    .menu-label {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
   }
 }
 

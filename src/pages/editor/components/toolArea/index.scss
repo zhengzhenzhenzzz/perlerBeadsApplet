@@ -186,7 +186,7 @@
     padding: 0;
     order: 2; // 在 Canvas 之后显示
     margin-top: 0;
-    margin-bottom: 80px; /* 为固定的 TabBar 留出空间 */
+    margin-bottom: 0; /* 紧贴底部 TabBar，消除多余空白 */
     
     // ColorPicker Section - 颜色选择区（位于工具栏顶部）
     .color-picker-section {
@@ -195,14 +195,14 @@
       border-bottom: 1px solid rgba($border-color-dark, 0.1);
       
       .color-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr); /* 5 列均匀分布 */
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap; /* 按现有间距换行排列为两行/三行 */
         gap: 12rpx;
-        margin-bottom: 0;
-        justify-content: center;
+        justify-content: flex-start;
         
         .color-item {
-          width: 56rpx;
+          width: 56rpx; /* 颜色方块大小统一 */
           height: 56rpx;
           flex-shrink: 0;
         }
@@ -234,7 +234,7 @@
       flex-direction: row;
       justify-content: space-around;
       align-items: center;
-      padding: 28rpx 8rpx;
+      padding: 24rpx 8rpx 16rpx;
       background-color: #FFFFFF;
       border-top: 1px solid rgba($border-color-dark, 0.1);
       
@@ -243,12 +243,12 @@
         flex-direction: column;
         align-items: center;
         gap: 6rpx;
-        min-width: 76rpx;
+        min-width: 64px;
         
         .tool-item {
-          width: 52rpx;
-          height: 52rpx;
-          border-radius: 8rpx;
+          width: 64px; /* 与顶部菜单按钮(.menu-item 64px)大小一致 */
+          height: 64px;
+          border-radius: 8px;
           
           &.active {
             background-color: $primary-color;
@@ -261,8 +261,9 @@
         }
         
         .tool-label {
-          font-size: 22rpx;
-          letter-spacing: 0.1px;
+          font-size: 16px; /* 与顶部菜单文字(.menu-label 16px)大小一致 */
+          font-weight: 600;
+          letter-spacing: 0.4px;
         }
       }
     }
@@ -284,6 +285,7 @@
 
 .color-set-panel {
   width: 90vw;
+  max-width: 560px; /* 浏览器端宽屏下限制弹窗宽度，居中显示，弹窗适当增大 */
   max-height: 80vh;
   background-color: $background-color-white;
   border-radius: $border-radius-lg;
@@ -320,8 +322,16 @@
 
 .panel-content {
   flex: 1;
+  box-sizing: border-box; /* H5 下 taro-scroll-view-core 默认 content-box，padding 会把容器撑宽溢出弹窗，裁切条目右侧圆角边框 */
   padding: $spacing-base;
   max-height: 60vh;
+  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+
+  /* 隐藏 Taro H5 scroll-view 滚动条，避免滚动条占位覆盖条目最右侧圆角边框 */
+  .taro-scroll-view__scroll-y::-webkit-scrollbar,
+  .taro-scroll--hidebar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .color-set-list {
@@ -332,6 +342,7 @@
 
 .color-set-item {
   padding: $spacing-base;
+  padding-right: 64px; /* 增大右侧内边距，让色块/勾选整体向左排布，不贴 item 右边界，为圆角边框留足空间 */
   background-color: $background-color-gray;
   border-radius: $border-radius-base;
   border: 2px solid transparent;
@@ -370,8 +381,12 @@
 
 .color-set-preview {
   display: flex;
+  flex-wrap: wrap; /* 色块组按 4+4 排列为两行，收窄宽度整体左移 */
   gap: 4px;
+  width: 108px; /* 4 个色块 + 3 间距 */
   margin-left: $spacing-base;
+  margin-right: 12px; /* 与右侧勾选徽章保持间距 */
+  flex-shrink: 0;
 }
 
 .preview-color {
@@ -382,14 +397,18 @@
 }
 
 .color-set-check {
-  position: absolute;
-  top: $spacing-base;
-  right: $spacing-base;
-  width: 32px;
-  height: 32px;
-  background-color: $primary-color;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
   border-radius: 50%;
+  background-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &.active {
+    background-color: $primary-color;
+    border: 2px solid #FFFFFF; /* 白色描边，清晰醒目 */
+    box-shadow: $shadow-sm;
+  }
 }

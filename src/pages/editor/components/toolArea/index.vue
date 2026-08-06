@@ -26,13 +26,13 @@
     <view class="tool-bar">
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'brush' }]" @tap="handleToolChange('brush')">
-          <MIcon name="edit" :size="26" :color="currentTool === 'brush' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="edit" :size="32" :color="currentTool === 'brush' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">画笔</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'eraser' }]" @tap="handleToolChange('eraser')">
-          <MIcon name="delete" :size="26" :color="currentTool === 'eraser' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="delete" :size="32" :color="currentTool === 'eraser' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">橡皮</text>
       </view>
@@ -44,19 +44,19 @@
       </view> -->
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'grid' }]" @tap="handleToolChange('grid')">
-          <MIcon name="grid_on" :size="26" :color="currentTool === 'grid' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="grid_on" :size="32" :color="currentTool === 'grid' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">网格</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'select' }]" @tap="handleToolChange('select')">
-          <MIcon name="touch_app" :size="26" :color="currentTool === 'select' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="touch_app" :size="32" :color="currentTool === 'select' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">选择</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'move' }]" @tap="handleToolChange('move')">
-          <MIcon name="open_with" :size="26" :color="currentTool === 'move' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="open_with" :size="32" :color="currentTool === 'move' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">移动</text>
       </view>
@@ -71,7 +71,7 @@
           <MIcon name="close" :size="24" color="#5C5852" />
         </view>
       </view>
-      <scroll-view scroll-y class="panel-content">
+      <scroll-view scroll-y class="panel-content" enhanced :show-scrollbar="false">
         <view class="color-set-list">
           <view v-for="(colorSet, index) in colorSets" :key="index"
             :class="['color-set-item', { active: currentColorSetId === colorSet.id }]"
@@ -84,8 +84,8 @@
               <view v-for="(color, colorIndex) in colorSet.colors.slice(0, 8)" :key="colorIndex" class="preview-color"
                 :style="{ backgroundColor: color }" />
             </view>
-            <view v-if="currentColorSetId === colorSet.id" class="color-set-check">
-              <MIcon name="check" :size="20" color="#FFFFFF" />
+            <view :class="['color-set-check', { active: currentColorSetId === colorSet.id }]">
+              <MIcon v-if="currentColorSetId === colorSet.id" name="check" :size="18" color="#FFFFFF" />
             </view>
           </view>
         </view>
