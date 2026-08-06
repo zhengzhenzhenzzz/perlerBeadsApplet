@@ -259,10 +259,25 @@ const handleContinueEdit = async (item: DisplayItem) => {
   try {
     Taro.showLoading({ title: '加载中...' })
     const { setTempData } = useEditorTempStore()
+
+    // 优先使用 pngData；H5 端旧数据可能因 base64 编码问题导致 pngData 为空，回退使用缩略图
+    let pngBuffer: ArrayBuffer
+    if (item.pngData) {
+      pngBuffer = base64ToArrayBuffer(item.pngData)
+    } else {
+      const base64 = (item.pngTempPath || '').split(',')[1] || item.pngTempPath || ''
+      pngBuffer = base64ToArrayBuffer(base64)
+    }
+
     setTempData({
       gridSize: item.gridSize,
-      pngBuffer: base64ToArrayBuffer(item.pngData),
-      pngTempPath: item.pngTempPath
+      pngBuffer,
+      pngTempPath: item.pngTempPath,
+      workId: item.id,
+      title: item.title,
+      description: item.description,
+      tags: item.tags,
+      status: item.status
     })
     Taro.hideLoading()
     Taro.switchTab({ url: '/pages/editor/index' })

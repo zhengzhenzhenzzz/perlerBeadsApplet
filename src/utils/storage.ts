@@ -1,5 +1,5 @@
 import Taro from '@tarojs/taro'
-import { arrayBufferToBase64, base64ToArrayBuffer } from './base64'
+import { arrayBufferToBase64 } from './base64'
 
 export type PixelArtStatus = 'unfinished' | 'finished'
 

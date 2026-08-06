@@ -95,7 +95,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import Taro from '@tarojs/taro'
-import { savePixelArt, PixelArtStatus } from '@/utils/storage'
+import { savePixelArt, updatePixelArt, PixelArtStatus } from '@/utils/storage'
+import { arrayBufferToBase64 } from '@/utils/base64'
 import { arrayBufferToTempFilePath } from '@/utils/pixelArt'
 import { useEditorTempStore, EditorTempData } from '@/stores/editorTemp'
 import './index.scss'
@@ -146,7 +147,7 @@ const handleSubmit = async () => {
   try {
     Taro.showLoading({ title: '保存中...' })
     
-    await savePixelArt({
+    const common = {
       title: formData.value.title.trim(),
       description: formData.value.description.trim(),
       tags: formData.value.tags,
@@ -154,7 +155,17 @@ const handleSubmit = async () => {
       gridSize: editorData.value.gridSize,
       pngData: editorData.value.pngBuffer,
       pngTempPath: editorData.value.pngTempPath
-    })
+    }
+
+    // 从作品页继续编辑：原地更新已有作品，保留原 id 与创建时间
+    if (editorData.value.workId) {
+      await updatePixelArt(editorData.value.workId, {
+        ...common,
+        pngData: arrayBufferToBase64(editorData.value.pngBuffer)
+      })
+    } else {
+      await savePixelArt(common)
+    }
     
     const { clearTempData } = useEditorTempStore()
     clearTempData()
@@ -180,6 +191,20 @@ onMounted(async () => {
   
   if (data) {
     editorData.value = data
+    
+    // 从作品页继续编辑时，默认填入上次输入的标题、简介、标签与状态
+    if (data.title !== undefined) {
+      formData.value.title = data.title
+    }
+    if (data.description !== undefined) {
+      formData.value.description = data.description
+    }
+    if (data.tags !== undefined) {
+      formData.value.tags = [...data.tags]
+    }
+    if (data.status !== undefined) {
+      formData.value.status = data.status
+    }
     
     if (data.pngBuffer) {
       try {

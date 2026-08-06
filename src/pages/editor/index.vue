@@ -58,6 +58,7 @@ import { isH5 } from '@/utils/platform'
 import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData} from '@/utils/pixelArt'
 import { useEditorTempStore,EditorTempData } from '@/stores/editorTemp'
 import { base64ToArrayBuffer } from '@/utils/base64'
+import type { PixelArtStatus } from '@/utils/storage'
 import './index.scss'
 
 
@@ -146,7 +147,12 @@ const handleSave = async () => {
     setTempData({
       gridSize: gridSize.value,
       pngBuffer: pngBuffer,
-      pngTempPath: pngTempPath
+      pngTempPath: pngTempPath,
+      workId: currentWork.value?.id,
+      title: currentWork.value?.title,
+      description: currentWork.value?.description,
+      tags: currentWork.value?.tags,
+      status: currentWork.value?.status
     })
     
     Taro.hideLoading()
@@ -289,12 +295,27 @@ const renderPixelData = () => {
   })
 }
 
+// 当前正在编辑的已有作品信息（从作品页跳转继续编辑时带入，用于保存时默认上次输入的内容并原地更新）
+const currentWork = ref<{ id: string; title: string; description: string; tags: string[]; status: PixelArtStatus } | null>(null)
+
 const applyTempData = async (): Promise<boolean> => {
   const { getTempData, clearTempData } = useEditorTempStore()
   const tempData = getTempData()
   clearTempData()
 
   if (!tempData) return false
+
+  if (tempData.workId) {
+    currentWork.value = {
+      id: tempData.workId,
+      title: tempData.title || '',
+      description: tempData.description || '',
+      tags: tempData.tags || [],
+      status: tempData.status || 'unfinished'
+    }
+  } else {
+    currentWork.value = null
+  }
 
   gridSize.value = tempData.gridSize
   const tempFilePath = await arrayBufferToTempFilePath(tempData.pngBuffer)
