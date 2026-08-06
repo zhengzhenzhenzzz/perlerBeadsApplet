@@ -21,6 +21,26 @@ $works-preview-bg: #EBE8E3;
   box-sizing: border-box;
 }
 
+// ===== 移动设备模拟器模式样式 =====
+@media screen and (max-width: 480px) and (orientation: portrait) {
+  .works-page {
+    // 移除左侧边栏间距，占满全屏并居中对齐
+    padding-left: 0;
+    justify-content: center;
+    overflow-x: hidden;
+  }
+
+  .content-wrapper {
+    width: 100%;
+    padding: 0 32px 44px;
+    gap: 40px;
+  }
+
+  .works-scroll {
+    height: calc(100vh - 280px);
+  }
+}
+
 .content-wrapper {
   flex: 1;
   display: flex;
