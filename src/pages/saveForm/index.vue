@@ -96,7 +96,7 @@
 import { ref, computed, onMounted } from 'vue'
 import Taro from '@tarojs/taro'
 import { savePixelArt, updatePixelArt, PixelArtStatus } from '@/utils/storage'
-import { arrayBufferToBase64 } from '@/utils/base64'
+import { arrayBufferToBase64, base64ToArrayBuffer } from '@/utils/base64'
 import { arrayBufferToTempFilePath } from '@/utils/pixelArt'
 import { useEditorTempStore, EditorTempData } from '@/stores/editorTemp'
 import './index.scss'
@@ -136,6 +136,7 @@ const handleRemoveTag = (index: number) => {
 const handleCancel = () => {
   const { clearTempData } = useEditorTempStore()
   clearTempData()
+  Taro.removeStorageSync('pixelart_save_temp')
   Taro.navigateBack()
 }
 
@@ -169,6 +170,7 @@ const handleSubmit = async () => {
     
     const { clearTempData } = useEditorTempStore()
     clearTempData()
+    Taro.removeStorageSync('pixelart_save_temp')
     
     Taro.hideLoading()
     Taro.showToast({ title: '保存成功', icon: 'success' })
@@ -187,7 +189,28 @@ const handleSubmit = async () => {
 
 onMounted(async () => {
   const { getTempData } = useEditorTempStore()
-  const data = getTempData()
+  let data = getTempData()
+
+  // 内存 store 丢失（如 H5 页面跳转后 store 重置）时，回退到本地存储中的临时保存数据
+  if (!data) {
+    try {
+      const saved = Taro.getStorageSync('pixelart_save_temp')
+      if (saved && saved.gridSize && saved.pngBase64) {
+        data = {
+          gridSize: saved.gridSize,
+          pngBuffer: base64ToArrayBuffer(saved.pngBase64),
+          pngTempPath: saved.pngTempPath,
+          workId: saved.workId,
+          title: saved.title,
+          description: saved.description,
+          tags: saved.tags,
+          status: saved.status
+        }
+      }
+    } catch (error) {
+      console.error('读取保存临时数据失败:', error)
+    }
+  }
   
   if (data) {
     editorData.value = data
@@ -209,7 +232,11 @@ onMounted(async () => {
     if (data.pngBuffer) {
       try {
         previewUrl.value = data.pngTempPath
-        previewSize.value = Math.min(data.gridSize * 10, 200)
+        // 预览图尺寸自适应屏幕宽度：移动端约占屏宽 55%，并受网格尺寸约束
+        const systemInfo = Taro.getSystemInfoSync()
+        const screenWidth = systemInfo.windowWidth || 375
+        const maxSize = Math.min(screenWidth * 0.55, 280)
+        previewSize.value = Math.max(120, Math.min(data.gridSize * 10, maxSize))
       } catch (error) {
         console.error('Failed to convert ArrayBuffer to temp file:', error)
       }

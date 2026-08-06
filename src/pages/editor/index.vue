@@ -57,7 +57,7 @@ import MIcon from '@/components/MIcon/index.vue'
 import { isH5 } from '@/utils/platform'
 import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData} from '@/utils/pixelArt'
 import { useEditorTempStore,EditorTempData } from '@/stores/editorTemp'
-import { base64ToArrayBuffer } from '@/utils/base64'
+import { base64ToArrayBuffer, arrayBufferToBase64 } from '@/utils/base64'
 import type { PixelArtStatus } from '@/utils/storage'
 import './index.scss'
 
@@ -154,6 +154,22 @@ const handleSave = async () => {
       tags: currentWork.value?.tags,
       status: currentWork.value?.status
     })
+
+    // H5 端内存 store 可能在页面跳转时丢失，持久化到本地存储作为兜底
+    try {
+      Taro.setStorageSync('pixelart_save_temp', {
+        gridSize: gridSize.value,
+        pngBase64: arrayBufferToBase64(pngBuffer),
+        pngTempPath: pngTempPath,
+        workId: currentWork.value?.id,
+        title: currentWork.value?.title,
+        description: currentWork.value?.description,
+        tags: currentWork.value?.tags,
+        status: currentWork.value?.status
+      })
+    } catch (error) {
+      console.error('持久化保存临时数据失败:', error)
+    }
     
     Taro.hideLoading()
     Taro.navigateTo({

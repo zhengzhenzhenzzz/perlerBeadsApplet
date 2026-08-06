@@ -6,6 +6,87 @@
   padding: 16px;
 }
 
+// ===== 移动设备模拟器模式样式 =====
+@media screen and (max-width: 480px) and (orientation: portrait) {
+  .save-form-page {
+    // 适配手机屏幕：减小页面边距，内容占满全屏
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  .preview-section {
+    margin-bottom: 12px;
+    padding: 14px;
+  }
+
+  .preview-image {
+    max-width: 100%;
+  }
+
+  .form-section {
+    padding: 20px 16px;
+  }
+
+  .form-label {
+    font-size: 26px;
+    margin-bottom: 12px;
+  }
+
+  // 触控区域更大，方便手指操作
+  .form-input {
+    height: 84px;
+    font-size: 28px;
+  }
+
+  .form-textarea {
+    min-height: 150px;
+    font-size: 28px;
+  }
+
+  .tag-input-wrapper {
+    gap: 12px;
+  }
+
+  .tag-input {
+    height: 72px;
+    font-size: 26px;
+  }
+
+  .add-tag-btn {
+    width: 72px;
+    height: 72px;
+    font-size: 28px;
+  }
+
+  .tag-item {
+    padding: 10px 20px;
+
+    .tag-text {
+      font-size: 26px;
+    }
+
+    .tag-close {
+      width: 32px;
+      height: 32px;
+      font-size: 24px;
+    }
+  }
+
+  .status-item {
+    height: 76px;
+  }
+
+  .form-actions {
+    margin-top: 28px;
+    gap: 16px;
+  }
+
+  .btn {
+    height: 88px;
+    font-size: 28px;
+  }
+}
+
 .preview-section {
   display: flex;
   justify-content: center;
