@@ -238,22 +238,7 @@ const handleCardLongPress = (item: DisplayItem) => {
       if (tapIndex === 0) {
         handleViewDetail(item)
       } else if (tapIndex === 1) {
-        try {
-          Taro.showLoading({ title: '加载中...' })
-          const { setTempData } = useEditorTempStore()
-          setTempData({
-            gridSize: item.gridSize,
-            pngBuffer: base64ToArrayBuffer(item.pngData),
-            pngTempPath: item.pngTempPath
-          })
-          Taro.hideLoading()
-          Taro.switchTab({
-            url: '/pages/editor/index'
-          })
-        } catch (error) {
-          Taro.hideLoading()
-          Taro.showToast({ title: '加载失败', icon: 'error' })
-        }
+        handleContinueEdit(item)
       } else if (tapIndex === 2) {
         handleExport(item)
       } else if (tapIndex === 3) {
@@ -265,7 +250,29 @@ const handleCardLongPress = (item: DisplayItem) => {
   })
 }
 
+const handleContinueEdit = async (item: DisplayItem) => {
+  try {
+    Taro.showLoading({ title: '加载中...' })
+    const { setTempData } = useEditorTempStore()
+    setTempData({
+      gridSize: item.gridSize,
+      pngBuffer: base64ToArrayBuffer(item.pngData),
+      pngTempPath: item.pngTempPath
+    })
+    Taro.hideLoading()
+    Taro.switchTab({ url: '/pages/editor/index' })
+  } catch (error) {
+    Taro.hideLoading()
+    Taro.showToast({ title: '加载失败', icon: 'error' })
+  }
+}
+
 const handleViewDetail = (item: DisplayItem) => {
+  // 进行中的作品点击后直接进入编辑器继续创作
+  if (item.status === 'unfinished') {
+    handleContinueEdit(item)
+    return
+  }
   try {
     Taro.setStorageSync(`pixelart_detail_${item.id}`, item)
     Taro.navigateTo({
