@@ -4,10 +4,61 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: $spacing-sm $spacing-md;
+  padding: 8px $spacing-md;
   background-color: $background-color-white;
   border-bottom: 2px solid rgba($border-color-dark, 0.2);
-  gap: 22px;
+  gap: 16px;
+  
+  // Mobile simulator mode optimization
+  .editor-page.device-simulator-mobile & {
+    padding: 8px;
+    gap: 14px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 104px;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 1001;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    // 隐藏滚动条，保持简洁美观
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // 整组按钮：放得下时水平居中，放不下时可横向滚动（首尾 margin auto 技巧）
+    .menu-wrapper {
+      flex-shrink: 0;
+      gap: 6px;
+    }
+
+    .menu-wrapper:first-child {
+      margin-left: auto;
+    }
+
+    .menu-wrapper:last-child {
+      margin-right: auto;
+    }
+
+    // 放大按钮尺寸，减少左右两侧留白
+    .menu-item {
+      width: 64px;
+      height: 64px;
+    }
+
+    .menu-label {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
+  }
 }
 
 .menu-wrapper {
@@ -21,8 +72,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 65px;
-  height: 65px;
+  width: 60px;
+  height: 60px;
   border-radius: $border-radius-base;
   background-color: $background-color-gray;
   
@@ -41,9 +92,9 @@
 }
 
 .menu-label {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: $text-color-secondary;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   text-align: center;
 }

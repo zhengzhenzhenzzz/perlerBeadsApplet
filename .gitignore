@@ -6,3 +6,9 @@ node_modules/
 .DS_Store
 .swc
 .env
+.qoder/
+# 部署配置：含服务器地址等敏感信息（.env.deploy.example 为模板，可提交）
+.env.deploy
+# 部署脚本的临时打包产物（正常会自动删除，异常中断时可能残留）
+h5-deploy-*.tar.gz
+

@@ -1,35 +1,38 @@
 @use '@/styles/variables.scss' as *;
 
 .tool-area {
+  display: flex;
+  flex-direction: column;
+  width: 160px;
+  height: 100%;
+  flex-shrink: 0;
+  overflow-y: auto;
   background-color: $background-color-white;
-  border-top: 2px solid rgba($border-color-dark, 0.2);
+  border-right: 2px solid rgba($border-color-dark, 0.2);
+  box-sizing: border-box;
 }
 
 .color-picker-section {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px;
   border-bottom: 2px solid rgba($border-color-dark, 0.2);
 }
 
 .color-grid {
-  flex: 1;
+  flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.color-row {
-  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .color-item {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,11 +53,12 @@
 }
 
 .color-set-btn {
-  width: 78px;
-  height: 78px;
+  align-self: center;
+  width: 56px;
+  height: 56px;
   border-radius: 8px;
   background-color: $background-color-gray;
-  border: 3px solid $border-color-dark;
+  border: 2px solid $border-color-dark;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,23 +70,25 @@
 }
 
 .grid-size-section {
-  padding: 16px;
+  padding: 12px;
   border-bottom: 2px solid rgba($border-color-dark, 0.2);
 }
 
 .grid-size-list {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .grid-size-item {
-  padding: 12px 24px;
+  padding: 6px 0;
   background-color: $background-color-gray;
-  border-radius: 8px;
-  font-size: $font-size-base;
+  border-radius: 6px;
+  font-size: $font-size-sm;
   color: $text-color-primary;
   font-weight: 600;
+  text-align: center;
   
   &.active {
     background-color: $primary-color;
@@ -96,10 +102,11 @@
 
 .tool-bar {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 30px;
-  padding: 20px 30px;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
   background-color: $background-color-gray;
 }
 
@@ -107,15 +114,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
 }
 
 .tool-item {
-  width: 80px;
-  height: 80px;
+  width: 52px;
+  height: 52px;
   border-radius: 8px;
   background-color: $background-color-white;
-  border: 3px solid $border-color;
+  border: 2px solid $border-color;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,11 +139,135 @@
 }
 
 .tool-label {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 500;
   color: $text-color-secondary;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   text-align: center;
+}
+
+// ============================================
+// H5 设备模拟器优化
+// 当切换到移动设备预览模式时
+// ============================================
+@media screen and (max-width: 800px) and (orientation: portrait) {
+  .tool-item {
+    width: 44px; /* 适中宽度 */
+    height: 44px; /* 适中高度 */
+    border-radius: 8px; /* 圆角稍大 */
+    flex-shrink: 0; /* 防止挤压 */
+    
+    &.active {
+      box-shadow: 0 0 0 2px rgba($border-color-dark, 0.2); /* 选中高亮阴影 */
+    }
+  }
+  
+  .tool-label {
+    font-size: 11px; /* 稍微调小字体 */
+    line-height: 1.1; /* 紧凑行高 */
+  }
+  
+  .color-set-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+// Mobile Simulator Mode - device-simulator-mobile class
+.editor-page.device-simulator-mobile {
+  .tool-area {
+    display: block;
+    width: 100%;
+    height: auto;
+    flex-shrink: 0;
+    overflow: visible;
+    background-color: transparent;
+    border-right: none;
+    padding: 0;
+    order: 2; // 在 Canvas 之后显示
+    margin-top: 0;
+    margin-bottom: 0; /* 紧贴底部 TabBar，消除多余空白 */
+    
+    // ColorPicker Section - 颜色选择区（位于工具栏顶部）
+    .color-picker-section {
+      padding: 20rpx;
+      background-color: #FFFFFF;
+      border-bottom: 1px solid rgba($border-color-dark, 0.1);
+      
+      .color-grid {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap; /* 按现有间距换行排列为两行/三行 */
+        gap: 12rpx;
+        justify-content: flex-start;
+        
+        .color-item {
+          width: 56rpx; /* 颜色方块大小统一 */
+          height: 56rpx;
+          flex-shrink: 0;
+        }
+      }
+      
+      .color-set-btn {
+        width: 64rpx;
+        height: 64rpx;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 20rpx;
+      }
+    }
+    
+    // Grid Size Section
+    .grid-size-section {
+      padding: 20rpx;
+      background-color: #FFFFFF;
+      border-bottom: 1px solid rgba($border-color-dark, 0.1);
+      
+      .grid-size-list {
+        gap: 16rpx;
+      }
+    }
+    
+    // ToolBar - 工具按钮水平排列（位于工具栏底部）
+    .tool-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      padding: 24rpx 8rpx 16rpx;
+      background-color: #FFFFFF;
+      border-top: 1px solid rgba($border-color-dark, 0.1);
+      
+      .tool-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6rpx;
+        min-width: 64px;
+        
+        .tool-item {
+          width: 64px; /* 与顶部菜单按钮(.menu-item 64px)大小一致 */
+          height: 64px;
+          border-radius: 8px;
+          
+          &.active {
+            background-color: $primary-color;
+            border-color: $border-color-dark;
+          }
+          
+          &:active {
+            transform: scale(0.95);
+          }
+        }
+        
+        .tool-label {
+          font-size: 16px; /* 与顶部菜单文字(.menu-label 16px)大小一致 */
+          font-weight: 600;
+          letter-spacing: 0.4px;
+        }
+      }
+    }
+  }
 }
 
 .color-set-panel-mask {
@@ -154,6 +285,7 @@
 
 .color-set-panel {
   width: 90vw;
+  max-width: 560px; /* 浏览器端宽屏下限制弹窗宽度，居中显示，弹窗适当增大 */
   max-height: 80vh;
   background-color: $background-color-white;
   border-radius: $border-radius-lg;
@@ -190,8 +322,16 @@
 
 .panel-content {
   flex: 1;
+  box-sizing: border-box; /* H5 下 taro-scroll-view-core 默认 content-box，padding 会把容器撑宽溢出弹窗，裁切条目右侧圆角边框 */
   padding: $spacing-base;
   max-height: 60vh;
+  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+
+  /* 隐藏 Taro H5 scroll-view 滚动条，避免滚动条占位覆盖条目最右侧圆角边框 */
+  .taro-scroll-view__scroll-y::-webkit-scrollbar,
+  .taro-scroll--hidebar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .color-set-list {
@@ -202,6 +342,7 @@
 
 .color-set-item {
   padding: $spacing-base;
+  padding-right: 64px; /* 增大右侧内边距，让色块/勾选整体向左排布，不贴 item 右边界，为圆角边框留足空间 */
   background-color: $background-color-gray;
   border-radius: $border-radius-base;
   border: 2px solid transparent;
@@ -240,8 +381,12 @@
 
 .color-set-preview {
   display: flex;
+  flex-wrap: wrap; /* 色块组按 4+4 排列为两行，收窄宽度整体左移 */
   gap: 4px;
+  width: 108px; /* 4 个色块 + 3 间距 */
   margin-left: $spacing-base;
+  margin-right: 12px; /* 与右侧勾选徽章保持间距 */
+  flex-shrink: 0;
 }
 
 .preview-color {
@@ -252,14 +397,18 @@
 }
 
 .color-set-check {
-  position: absolute;
-  top: $spacing-base;
-  right: $spacing-base;
-  width: 32px;
-  height: 32px;
-  background-color: $primary-color;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
   border-radius: 50%;
+  background-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &.active {
+    background-color: $primary-color;
+    border: 2px solid #FFFFFF; /* 白色描边，清晰醒目 */
+    box-shadow: $shadow-sm;
+  }
 }

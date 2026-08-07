@@ -9,7 +9,7 @@
       >
         <MIcon 
           :name="item.icon" 
-          :size="20" 
+          :size="18" 
           :color="selected === index ? '#FFFFFF' : '#B5B0A8'"
         />
         <text class="nav-label">{{ item.text }}</text>
@@ -19,8 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import Taro from '@tarojs/taro'
+import { ref } from 'vue'
+import Taro, { useDidShow } from '@tarojs/taro'
 import MIcon from '@/components/MIcon/index.vue'
 import './index.scss'
 
@@ -53,14 +53,16 @@ const switchTab = (item: TabBarItem) => {
 const updateSelected = () => {
   const pages = Taro.getCurrentPages()
   const currentPage = pages[pages.length - 1]
-  const route = currentPage.route || ''
+  // H5 端 route 可能带前导斜杠，统一去掉后再比较
+  const route = (currentPage.route || '').replace(/^\//, '')
   const index = list.value.findIndex(item => item.pagePath === route)
   if (index !== -1) {
     selected.value = index
   }
 }
 
-onMounted(() => {
+// 每次页面显示时同步高亮（覆盖首次加载与 tab 切换两种场景）
+useDidShow(() => {
   updateSelected()
 })
 </script>

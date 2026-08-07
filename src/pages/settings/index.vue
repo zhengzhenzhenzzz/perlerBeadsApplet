@@ -47,12 +47,35 @@
 import { ref, onMounted } from 'vue'
 import Taro from '@tarojs/taro'
 import { appConfig } from '@/config/app'
+import { isH5 } from '@/utils/platform'
 import './index.scss'
 
 const cacheSize = ref('0KB')
 const version = ref('')
 
+// H5 端没有文件系统，缓存统计改为估算 localStorage 占用
+const getH5StorageSize = (): number => {
+  try {
+    let totalSize = 0
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || ''
+      const value = localStorage.getItem(key) || ''
+      // 按 UTF-16 每字符 2 字节估算
+      totalSize += (key.length + value.length) * 2
+    }
+    return totalSize
+  } catch (error) {
+    console.error('读取localStorage大小失败:', error)
+    return 0
+  }
+}
+
 const getCacheSize = () => {
+  if (isH5) {
+    const sizeInKB = Math.round(getH5StorageSize() / 1024)
+    cacheSize.value = sizeInKB > 0 ? `${sizeInKB}KB` : '0KB'
+    return
+  }
   try {
     const fs = Taro.getFileSystemManager()
     const tmpPath = `${Taro.env.USER_DATA_PATH}`
@@ -89,6 +112,11 @@ const getCacheSize = () => {
 }
 
 const clearCache = () => {
+  // H5 端不清理 localStorage（其中存有用户作品数据），仅重置显示
+  if (isH5) {
+    cacheSize.value = '0KB'
+    return
+  }
   try {
     const fs = Taro.getFileSystemManager()
     const tmpPath = `${Taro.env.USER_DATA_PATH}/tmp`

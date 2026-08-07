@@ -5,8 +5,16 @@
   flex-direction: column;
   height: 100vh;
   background-color: $background-color;
-  padding-bottom: $tab-bar-height;
+  padding-left: $side-nav-width;
   box-sizing: border-box;
+}
+
+// ===== 桌面浏览器通用样式 =====
+@media screen and (min-width: 481px) {
+  .editor-page.device-simulator-mobile {
+    // 保持桌面端原有布局（左侧边栏）
+    padding-left: $side-nav-width;
+  }
 }
 
 .editor-header {
@@ -47,4 +55,127 @@
   justify-content: center;
   overflow: hidden;
   background-color: $background-color;
+}
+
+.editor-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// 桌面端工具栏保持在左侧（不需要修改，默认就是左侧）
+
+// ===== 移动设备模拟器模式样式 =====
+@media screen and (max-width: 480px) and (orientation: portrait) {
+  .editor-page.device-simulator-mobile {
+    // 移除左侧边栏间距，占满全屏
+    padding-left: 0;
+    justify-content: center;
+    overflow-x: hidden;
+    
+    // MenuBar - 顶部固定
+    .menu-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1001;
+      height: 104px;
+    }
+    
+    // Editor body - Canvas + ToolArea + TabBar
+    .editor-body {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: none; /* 不限制最大宽度 */
+      margin: 0; /* 无左右边距 */
+      min-height: calc(100vh - 204px); /* MenuBar + TabBar 总高度 */
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-top: 104px; /* 为固定的 MenuBar 留出空间 */
+      padding-bottom: 100px; /* 为固定的 TabBar 留出空间，保证工具行文字完整显示 */
+    }
+    
+    // Canvas 占据主要空间（位于顶部）
+    .canvas-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      padding: 0; /* 移除 Canvas 内边距 */
+      order: 1; // Canvas 在前显示
+    }
+    
+    // ToolArea - 位于 Canvas 下方、TabBar 上方（位于底部）
+    .tool-area {
+      width: 100%;
+      flex-shrink: 0;
+      margin-top: 0; /* 紧贴 Canvas */
+      background-color: #FFFFFF;
+      box-shadow: 0 0 10rpx rgba(0, 0, 0, 0.05); /* 减小小阴影 */
+      order: 2; // 在 Canvas 之后显示
+      border-radius: 0; /* 移除圆角，紧密贴合 */
+      
+      // ColorPicker Section - 颜色选择区（位于工具栏顶部）
+      .color-picker-section {
+        padding: 12rpx; /* 减小内边距 */
+        border-bottom: 1px solid rgba($border-color-dark, 0.1);
+        
+        .color-grid {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap; /* 按现有间距换行排列 */
+          gap: 8rpx; /* 减小间隙 */
+          justify-content: flex-start;
+        }
+        
+        .color-set-btn {
+          margin-top: 16rpx;
+          align-self: center;
+        }
+      }
+      
+      // Grid Size Section
+      .grid-size-section {
+        padding: 12rpx; /* 减小内边距 */
+        border-bottom: 1px solid rgba($border-color-dark, 0.1);
+        
+        .grid-size-list {
+          gap: 8rpx; /* 减小间隙 */
+        }
+      }
+      
+      // ToolBar - 工具按钮水平排列（位于工具栏底部）
+      .tool-bar {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        padding: 12rpx 8rpx 16rpx; /* 底部留出空间，保证文字完整显示 */
+        border-top: 1px solid rgba($border-color-dark, 0.1);
+        
+        .tool-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 4rpx; /* 减小内边距 */
+          min-width: 60px;
+          
+          .tool-item {
+            width: 64px; /* 与顶部菜单按钮(.menu-item 64px)大小一致 */
+            height: 64px;
+            margin-bottom: 4rpx; /* 减小间距 */
+          }
+          
+          .tool-label {
+            font-size: 16px; /* 与顶部菜单文字(.menu-label 16px)大小一致 */
+          }
+        }
+      }
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import Taro from '@tarojs/taro'
+import { isH5 } from '@/utils/platform'
 
 export interface UserInfo {
   avatarUrl: string
@@ -57,6 +58,14 @@ export const useUserStore = defineStore('user', () => {
 
   const wechatLogin = async () => {
     try {
+      // H5 端无微信登录能力，降级为游客身份直接登录
+      if (isH5) {
+        saveUserInfo({
+          avatarUrl: DEFAULT_AVATAR,
+          nickName: '拼豆用户'
+        })
+        return true
+      }
       const loginRes = await Taro.login()
       if (loginRes.code) {
         const userInfoRes = await Taro.getUserProfile({

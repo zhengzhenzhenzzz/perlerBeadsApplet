@@ -95,7 +95,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import Taro from '@tarojs/taro'
-import { savePixelArt, PixelArtStatus } from '@/utils/storage'
+import { savePixelArt, updatePixelArt, PixelArtStatus } from '@/utils/storage'
+import { arrayBufferToBase64, base64ToArrayBuffer } from '@/utils/base64'
 import { arrayBufferToTempFilePath } from '@/utils/pixelArt'
 import { useEditorTempStore, EditorTempData } from '@/stores/editorTemp'
 import './index.scss'
@@ -135,6 +136,7 @@ const handleRemoveTag = (index: number) => {
 const handleCancel = () => {
   const { clearTempData } = useEditorTempStore()
   clearTempData()
+  Taro.removeStorageSync('pixelart_save_temp')
   Taro.navigateBack()
 }
 
@@ -146,7 +148,7 @@ const handleSubmit = async () => {
   try {
     Taro.showLoading({ title: '保存中...' })
     
-    await savePixelArt({
+    const common = {
       title: formData.value.title.trim(),
       description: formData.value.description.trim(),
       tags: formData.value.tags,
@@ -154,10 +156,21 @@ const handleSubmit = async () => {
       gridSize: editorData.value.gridSize,
       pngData: editorData.value.pngBuffer,
       pngTempPath: editorData.value.pngTempPath
-    })
+    }
+
+    // 从作品页继续编辑：原地更新已有作品，保留原 id 与创建时间
+    if (editorData.value.workId) {
+      await updatePixelArt(editorData.value.workId, {
+        ...common,
+        pngData: arrayBufferToBase64(editorData.value.pngBuffer)
+      })
+    } else {
+      await savePixelArt(common)
+    }
     
     const { clearTempData } = useEditorTempStore()
     clearTempData()
+    Taro.removeStorageSync('pixelart_save_temp')
     
     Taro.hideLoading()
     Taro.showToast({ title: '保存成功', icon: 'success' })
@@ -176,15 +189,54 @@ const handleSubmit = async () => {
 
 onMounted(async () => {
   const { getTempData } = useEditorTempStore()
-  const data = getTempData()
+  let data = getTempData()
+
+  // 内存 store 丢失（如 H5 页面跳转后 store 重置）时，回退到本地存储中的临时保存数据
+  if (!data) {
+    try {
+      const saved = Taro.getStorageSync('pixelart_save_temp')
+      if (saved && saved.gridSize && saved.pngBase64) {
+        data = {
+          gridSize: saved.gridSize,
+          pngBuffer: base64ToArrayBuffer(saved.pngBase64),
+          pngTempPath: saved.pngTempPath,
+          workId: saved.workId,
+          title: saved.title,
+          description: saved.description,
+          tags: saved.tags,
+          status: saved.status
+        }
+      }
+    } catch (error) {
+      console.error('读取保存临时数据失败:', error)
+    }
+  }
   
   if (data) {
     editorData.value = data
     
+    // 从作品页继续编辑时，默认填入上次输入的标题、简介、标签与状态
+    if (data.title !== undefined) {
+      formData.value.title = data.title
+    }
+    if (data.description !== undefined) {
+      formData.value.description = data.description
+    }
+    if (data.tags !== undefined) {
+      formData.value.tags = [...data.tags]
+    }
+    if (data.status !== undefined) {
+      formData.value.status = data.status
+    }
+    
     if (data.pngBuffer) {
       try {
         previewUrl.value = data.pngTempPath
-        previewSize.value = Math.min(data.gridSize * 10, 200)
+        // 预览图尺寸自适应屏幕宽度：移动端约占屏宽 55%，并受网格尺寸约束
+        const systemInfo = Taro.getSystemInfoSync()
+        const screenWidth = systemInfo.windowWidth || 375
+        const maxSize = Math.min(screenWidth * 0.55, 280)
+        previewSize.value = Math.max(120, Math.min(data.gridSize * 10, maxSize))
       } catch (error) {
         console.error('Failed to convert ArrayBuffer to temp file:', error)
       }

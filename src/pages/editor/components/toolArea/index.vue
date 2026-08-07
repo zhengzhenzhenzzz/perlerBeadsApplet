@@ -2,23 +2,15 @@
   <view class="tool-area">
     <view v-if="showColorPicker" class="color-picker-section">
       <view class="color-grid">
-        <view class="color-row">
-          <view v-for="(color, index) in colorRow1" :key="'row1-' + index"
-            :class="['color-item', { active: currentColor === color }]" :style="{ backgroundColor: color }"
-            @tap="handleColorSelect(color)">
-            <MIcon v-if="currentColor === color" name="check" :size="18" color="#FFFFFF" />
-          </view>
-        </view>
-        <view class="color-row">
-          <view v-for="(color, index) in colorRow2" :key="'row2-' + index"
-            :class="['color-item', { active: currentColor === color, 'white-color': color === '#FFFFFF' }]"
-            :style="{ backgroundColor: color }" @tap="handleColorSelect(color)">
-            <MIcon v-if="currentColor === color" name="check" :size="18" color="rgba(0,0,0,0.5)" />
-          </view>
+        <view v-for="(color, index) in currentColors" :key="'color-' + index"
+          :class="['color-item', { active: currentColor === color, 'white-color': isLightColor(color) }]"
+          :style="{ backgroundColor: color }" @tap="handleColorSelect(color)">
+          <MIcon v-if="currentColor === color" name="check" :size="14"
+            :color="isLightColor(color) ? 'rgba(0,0,0,0.5)' : '#FFFFFF'" />
         </view>
       </view>
       <view class="color-set-btn" @tap="handleOpenColorSetPanel">
-        <MIcon name="palette" :size="36" color="#2D2A26" />
+        <MIcon name="palette" :size="26" color="#2D2A26" />
       </view>
     </view>
 
@@ -34,37 +26,37 @@
     <view class="tool-bar">
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'brush' }]" @tap="handleToolChange('brush')">
-          <MIcon name="edit" :size="36" :color="currentTool === 'brush' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="edit" :size="32" :color="currentTool === 'brush' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">画笔</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'eraser' }]" @tap="handleToolChange('eraser')">
-          <MIcon name="delete" :size="36" :color="currentTool === 'eraser' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="delete" :size="32" :color="currentTool === 'eraser' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">橡皮</text>
       </view>
       <!-- <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'fill' }]" @tap="handleToolChange('fill')">
-          <MIcon name="format_color_fill" :size="36" :color="currentTool === 'fill' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="format_color_fill" :size="26" :color="currentTool === 'fill' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">填充</text>
       </view> -->
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'grid' }]" @tap="handleToolChange('grid')">
-          <MIcon name="grid_on" :size="36" :color="currentTool === 'grid' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="grid_on" :size="32" :color="currentTool === 'grid' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">网格</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'select' }]" @tap="handleToolChange('select')">
-          <MIcon name="touch_app" :size="36" :color="currentTool === 'select' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="touch_app" :size="32" :color="currentTool === 'select' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">选择</text>
       </view>
       <view class="tool-wrapper">
         <view :class="['tool-item', { active: currentTool === 'move' }]" @tap="handleToolChange('move')">
-          <MIcon name="open_with" :size="36" :color="currentTool === 'move' ? '#FFFFFF' : '#5C5852'" />
+          <MIcon name="open_with" :size="32" :color="currentTool === 'move' ? '#FFFFFF' : '#5C5852'" />
         </view>
         <text class="tool-label">移动</text>
       </view>
@@ -79,7 +71,7 @@
           <MIcon name="close" :size="24" color="#5C5852" />
         </view>
       </view>
-      <scroll-view scroll-y class="panel-content">
+      <scroll-view scroll-y class="panel-content" enhanced :show-scrollbar="false">
         <view class="color-set-list">
           <view v-for="(colorSet, index) in colorSets" :key="index"
             :class="['color-set-item', { active: currentColorSetId === colorSet.id }]"
@@ -92,8 +84,8 @@
               <view v-for="(color, colorIndex) in colorSet.colors.slice(0, 8)" :key="colorIndex" class="preview-color"
                 :style="{ backgroundColor: color }" />
             </view>
-            <view v-if="currentColorSetId === colorSet.id" class="color-set-check">
-              <MIcon name="check" :size="20" color="#FFFFFF" />
+            <view :class="['color-set-check', { active: currentColorSetId === colorSet.id }]">
+              <MIcon v-if="currentColorSetId === colorSet.id" name="check" :size="18" color="#FFFFFF" />
             </view>
           </view>
         </view>
@@ -148,6 +140,19 @@ const colorRow2 = [
   '#FFFFFF', '#E8913A', '#E87A9A', '#5BB8A8', '#8B6F5C',
   '#9A9A9A', '#6B4C7A', '#F5E6D3', '#87CEEB'
 ]
+
+/** 当前调色板展示的颜色（随颜色集切换而更新） */
+const currentColors = ref<string[]>([...colorRow1, ...colorRow2])
+
+/** 判断颜色是否偏浅，用于决定描边与勾选图标颜色 */
+const isLightColor = (color: string) => {
+  const hex = color.replace('#', '')
+  if (hex.length < 6) return false
+  const r = parseInt(hex.slice(0, 2), 16)
+  const g = parseInt(hex.slice(2, 4), 16)
+  const b = parseInt(hex.slice(4, 6), 16)
+  return r * 0.299 + g * 0.587 + b * 0.114 > 200
+}
 
 const gridSizes = [16, 24, 32, 48, 100]
 
@@ -223,8 +228,9 @@ const handleColorSelect = (color: string) => {
   }
 }
 
+// 只发出事件，由父组件确认（可能弹窗询问是否保留图案）后回传 gridSize，
+// 高亮状态跟随 props.gridSize 变化，避免用户取消时高亮与实际画布尺寸不一致
 const handleGridSizeChange = (size: number) => {
-  currentGridSize.value = size
   emit('update:gridSize', size)
 }
 
@@ -245,6 +251,7 @@ const handleCloseColorSetPanel = () => {
 
 const handleColorSetSelect = (colorSet: ColorSet) => {
   currentColorSetId.value = colorSet.id
+  currentColors.value = [...colorSet.colors]
   showColorSetPanel.value = false
 
   emit('canvasVisibleChange', true)

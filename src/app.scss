@@ -1,5 +1,11 @@
 @use './styles/variables.scss' as *;
 
+:root {
+  // CSS Variables for layout heights
+  --menu-bar-height: 60px;
+  --tab-bar-height: 80px;
+}
+
 page {
   background-color: $background-color;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

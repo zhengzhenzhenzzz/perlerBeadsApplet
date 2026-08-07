@@ -3,16 +3,20 @@
 .settings-page {
   min-height: 100vh;
   background-color: $background-color;
+  padding: $spacing-sm;
 }
 
 .menu-section {
-  margin-top: $spacing-base;
+  margin-top: $spacing-sm;
   background-color: $background-color-white;
+  border: 2px solid $border-color;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
   
   .menu-item {
     display: flex;
     align-items: center;
-    padding: $spacing-base;
+    padding: $spacing-sm $spacing-base;
     border-bottom: 1px solid $border-color-light;
     
     &:last-child {
@@ -24,17 +28,17 @@
     }
     
     .menu-icon {
-      margin-right: $spacing-base;
+      margin-right: $spacing-sm;
     }
     
     .menu-text {
       flex: 1;
-      font-size: $font-size-base;
+      font-size: $font-size-sm;
       color: $text-color-primary;
     }
     
     .menu-extra {
-      font-size: $font-size-sm;
+      font-size: $font-size-xs;
       color: $text-color-placeholder;
       margin-right: $spacing-xs;
     }
@@ -47,11 +51,11 @@
 
 .version-info {
   text-align: center;
-  padding: $spacing-lg;
-  margin-top: $spacing-lg;
+  padding: $spacing-base;
+  margin-top: $spacing-base;
   
   .version-text {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     color: $text-color-placeholder;
   }
 }

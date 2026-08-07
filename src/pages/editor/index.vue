@@ -1,5 +1,8 @@
 <template>
-  <view class="editor-page">
+  <view 
+    class="editor-page" 
+    :class="{ 'device-simulator-mobile': isMobileSimulator }"
+  >
 
     <MenuBar
       @undo="handleUndo"
@@ -12,27 +15,30 @@
       @zoom-out="handleZoomOut"
     />
     
-    <view class="canvas-wrapper" id="canvasWrapper">
-      <DrawPanel
-        ref="drawPanelRef"
+    <view class="editor-body">
+      <ToolArea
+        v-model="currentColor"
         :grid-size="gridSize"
-        :current-color="currentColor"
-        :current-tool="currentTool"
-        :canvas-width="canvasWidth"
-        :canvas-height="canvasHeight"
-        :hide-mode="hideCanvas"
-        @update:pixel-data="handlePixelDataUpdate"
+        @update:grid-size="handleGridSizeChange"
+        @tool-change="handleToolChange"
+        @canvas-visible-change="setCanvasVisible"
+        @color-set-change="handleColorSetChange"
       />
+
+      <view class="canvas-wrapper" id="canvasWrapper">
+        <DrawPanel
+          ref="drawPanelRef"
+          :grid-size="gridSize"
+          :current-color="currentColor"
+          :current-tool="currentTool"
+          :canvas-width="canvasWidth"
+          :canvas-height="canvasHeight"
+          :hide-mode="hideCanvas"
+          @update:pixel-data="handlePixelDataUpdate"
+        />
+      </view>
     </view>
     
-    <ToolArea
-      v-model="currentColor"
-      :grid-size="gridSize"
-      @update:grid-size="handleGridSizeChange"
-      @tool-change="handleToolChange"
-      @canvas-visible-change="setCanvasVisible"
-      @color-set-change="handleColorSetChange"
-    />
     <CustomTabBar />
     
     <canvas type="2d" id="exportCanvas" style="position: fixed; left: -9999px; top: -9999px; width: 256px; height: 256px;"></canvas>
@@ -41,16 +47,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
-import Taro from '@tarojs/taro'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import Taro, { useDidShow } from '@tarojs/taro'
 import CustomTabBar from '@/custom-tab-bar/index.vue'
 import MenuBar from './components/menu/index.vue'
 import DrawPanel from './components/drawPanel/index.vue'
 import ToolArea from './components/toolArea/index.vue'
 import MIcon from '@/components/MIcon/index.vue'
-import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData} from '@/utils/pixelArt'
+import { isH5 } from '@/utils/platform'
+import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData, transferPixelData, countPixelsLostOnResize} from '@/utils/pixelArt'
 import { useEditorTempStore,EditorTempData } from '@/stores/editorTemp'
-import { base64ToArrayBuffer } from '@/utils/base64'
+import { base64ToArrayBuffer, arrayBufferToBase64 } from '@/utils/base64'
+import type { PixelArtStatus } from '@/utils/storage'
 import './index.scss'
 
 
@@ -63,8 +71,15 @@ const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 const hideCanvas = ref(false)
 const currentColorPalette = ref<string[]>([])
+const isMobileSimulator = ref(false)
 
-const historyStack = ref<string[][]>([])
+/** 历史记录条目：同时保存网格尺寸，使撤销/重做能跨尺寸切换回退 */
+interface HistoryEntry {
+  gridSize: number
+  pixelData: string[]
+}
+
+const historyStack = ref<HistoryEntry[]>([])
 const historyIndex = ref(-1)
 const MAX_HISTORY = 50
 
@@ -73,14 +88,17 @@ const handleBack = () => {
 }
 
 const saveToHistory = () => {
-  const currentData = [...pixelData.value]
-  
+  const entry: HistoryEntry = {
+    gridSize: gridSize.value,
+    pixelData: [...pixelData.value]
+  }
+
   if (historyIndex.value < historyStack.value.length - 1) {
     historyStack.value = historyStack.value.slice(0, historyIndex.value + 1)
   }
-  
-  historyStack.value.push(currentData)
-  
+
+  historyStack.value.push(entry)
+
   if (historyStack.value.length > MAX_HISTORY) {
     historyStack.value.shift()
   } else {
@@ -88,13 +106,32 @@ const saveToHistory = () => {
   }
 }
 
+/**
+ * 还原到指定的历史记录条目
+ * 尺寸有变化时先切换 gridSize，等 DrawPanel 依据新尺寸重建缓冲后再写入像素数据，
+ * 否则 DrawPanel 内 watch(gridSize) 的重置逻辑会把刚写入的数据覆盖成空白
+ */
+const restoreHistoryEntry = (entry: HistoryEntry) => {
+  const sizeChanged = entry.gridSize !== gridSize.value
+  gridSize.value = entry.gridSize
+  pixelData.value = [...entry.pixelData]
+
+  if (sizeChanged) {
+    nextTick(() => {
+      calculateCanvasSize()
+      drawPanelRef.value?.setPixelData(pixelData.value)
+    })
+  } else {
+    drawPanelRef.value?.setPixelData(pixelData.value)
+  }
+}
+
 const handleUndo = () => {
   if (historyIndex.value > 0) {
     historyIndex.value--
-    const prevData = historyStack.value[historyIndex.value]
-    if (prevData && drawPanelRef.value) {
-      drawPanelRef.value.setPixelData(prevData)
-      pixelData.value = prevData
+    const prevEntry = historyStack.value[historyIndex.value]
+    if (prevEntry) {
+      restoreHistoryEntry(prevEntry)
     }
   } else {
     Taro.showToast({ title: '无法撤销', icon: 'none', duration: 1000 })
@@ -104,10 +141,9 @@ const handleUndo = () => {
 const handleRedo = () => {
   if (historyIndex.value < historyStack.value.length - 1) {
     historyIndex.value++
-    const nextData = historyStack.value[historyIndex.value]
-    if (nextData && drawPanelRef.value) {
-      drawPanelRef.value.setPixelData(nextData)
-      pixelData.value = nextData
+    const nextEntry = historyStack.value[historyIndex.value]
+    if (nextEntry) {
+      restoreHistoryEntry(nextEntry)
     }
   } else {
     Taro.showToast({ title: '无法重做', icon: 'none', duration: 1000 })
@@ -138,8 +174,29 @@ const handleSave = async () => {
     setTempData({
       gridSize: gridSize.value,
       pngBuffer: pngBuffer,
-      pngTempPath: pngTempPath
+      pngTempPath: pngTempPath,
+      workId: currentWork.value?.id,
+      title: currentWork.value?.title,
+      description: currentWork.value?.description,
+      tags: currentWork.value?.tags,
+      status: currentWork.value?.status
     })
+
+    // H5 端内存 store 可能在页面跳转时丢失，持久化到本地存储作为兜底
+    try {
+      Taro.setStorageSync('pixelart_save_temp', {
+        gridSize: gridSize.value,
+        pngBase64: arrayBufferToBase64(pngBuffer),
+        pngTempPath: pngTempPath,
+        workId: currentWork.value?.id,
+        title: currentWork.value?.title,
+        description: currentWork.value?.description,
+        tags: currentWork.value?.tags,
+        status: currentWork.value?.status
+      })
+    } catch (error) {
+      console.error('持久化保存临时数据失败:', error)
+    }
     
     Taro.hideLoading()
     Taro.navigateTo({
@@ -185,16 +242,12 @@ const handleImport = () => {
           currentColorPalette.value.length > 0 ? currentColorPalette.value : undefined
         )
         
-        if (result.gridSize !== gridSize.value) {
-          gridSize.value = result.gridSize
-          pixelData.value = result.pixelData
-          historyStack.value = []
-          historyIndex.value = -1
-        } else {
-          pixelData.value = result.pixelData
-        }
-        
+        // 历史记录已带 gridSize，导入即使改变尺寸也无需清空栈，用户可撤销回导入前的状态
+        gridSize.value = result.gridSize
+        pixelData.value = result.pixelData
+
         nextTick(() => {
+          calculateCanvasSize()
           if (drawPanelRef.value) {
             drawPanelRef.value.setPixelData(pixelData.value)
           }
@@ -236,11 +289,63 @@ const handlePixelDataUpdate = (data: string[]) => {
   saveToHistory()
 }
 
-const handleGridSizeChange = (size: number) => {
+/** 画布是否为空（全部为白色底色，即用户尚未绘制任何内容） */
+const isCanvasEmpty = () => {
+  if (pixelData.value.length === 0) return true
+  return pixelData.value.every(color => !color || color.toUpperCase() === '#FFFFFF')
+}
+
+/**
+ * 应用新的画布尺寸
+ * 尺寸切换会作为一条历史记录入栈，用户后悔时可点撤销回到切换前的尺寸与图案
+ * @param size - 目标网格边长
+ * @param keepPattern - 是否保留原图案（true 时保持原尺寸与原位置，居中对齐搬运）
+ */
+const applyGridSize = (size: number, keepPattern: boolean) => {
+  const prevSize = gridSize.value
+  const prevData = pixelData.value
+
   gridSize.value = size
-  pixelData.value = new Array(size * size).fill('#FFFFFF')
-  historyStack.value = []
-  historyIndex.value = -1
+  pixelData.value = keepPattern
+    ? transferPixelData(prevData, prevSize, size)
+    : new Array(size * size).fill('#FFFFFF')
+
+  saveToHistory()
+  nextTick(() => {
+    calculateCanvasSize()
+    drawPanelRef.value?.setPixelData(pixelData.value)
+  })
+}
+
+const handleGridSizeChange = (size: number) => {
+  if (size === gridSize.value) return
+
+  // 空画布无内容可丢失，直接切换，避免无谓打扰
+  if (isCanvasEmpty()) {
+    applyGridSize(size, false)
+    return
+  }
+
+  // 缩小画布时，居中裁切会丢掉超出新边界的已绘制像素，提示具体数量
+  const lostCount = countPixelsLostOnResize(pixelData.value, gridSize.value, size)
+  const keepHint = lostCount > 0
+    ? `保留时图案位置和大小不变、居中放置，但有 ${lostCount} 个已绘制的像素超出新画布范围会被裁掉。`
+    : '保留时图案位置和大小不变，居中放置在新画布上。'
+
+  Taro.showModal({
+    title: '切换画布尺寸',
+    content: `当前画布已有图案，切换到 ${size}×${size} 后是否保留？${keepHint}`,
+    confirmText: '保留图案',
+    cancelText: '清空画布',
+    success: (res) => {
+      if (res.confirm) {
+        applyGridSize(size, true)
+      } else if (res.cancel) {
+        applyGridSize(size, false)
+      }
+      // 弹窗被其他方式关闭时不改变尺寸，工具栏高亮跟随 props.gridSize 保持原状
+    }
+  })
 }
 
 const handleToolChange = (tool: string) => {
@@ -249,6 +354,14 @@ const handleToolChange = (tool: string) => {
 
 const setCanvasVisible = (visible: boolean) => {
   hideCanvas.value = !visible
+}
+
+const checkWindowSize = () => {
+  const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+  const isPortrait = window.innerHeight < window.innerWidth ? false : true
+  
+  // 判断是否处于移动设备模拟器模式：≤480px 且竖屏
+  isMobileSimulator.value = width <= 480 && isPortrait
 }
 
 const calculateCanvasSize = () => {
@@ -263,38 +376,95 @@ const calculateCanvasSize = () => {
 }
 
 
-const initPixel = async () => {
-    
-  const { getTempData ,clearTempData} = useEditorTempStore()
-  const tempData = getTempData()
-  
-  if (tempData) {
-    gridSize.value = tempData.gridSize
-    const tempFilePath = await arrayBufferToTempFilePath(tempData.pngBuffer)
-    const editorData = await pngToPixelArtData(tempFilePath, tempData.gridSize)
-    console.log('editorData',editorData);
-    pixelData.value = editorData.pixelData
-    gridSize.value = editorData.gridSize
-    clearTempData()
-  } else {
-    const initialData = new Array(gridSize.value * gridSize.value).fill('#FFFFFF')
-    pixelData.value = initialData
-  }
-
-    saveToHistory()
+const renderPixelData = () => {
+  saveToHistory()
   nextTick(() => {
     calculateCanvasSize()
-    if (tempData && drawPanelRef.value) {
+    if (drawPanelRef.value) {
       drawPanelRef.value.setPixelData(pixelData.value)
     }
   })
 }
 
+// 当前正在编辑的已有作品信息（从作品页跳转继续编辑时带入，用于保存时默认上次输入的内容并原地更新）
+const currentWork = ref<{ id: string; title: string; description: string; tags: string[]; status: PixelArtStatus } | null>(null)
+
+const applyTempData = async (): Promise<boolean> => {
+  const { getTempData, clearTempData } = useEditorTempStore()
+  const tempData = getTempData()
+  clearTempData()
+
+  if (!tempData) return false
+
+  if (tempData.workId) {
+    currentWork.value = {
+      id: tempData.workId,
+      title: tempData.title || '',
+      description: tempData.description || '',
+      tags: tempData.tags || [],
+      status: tempData.status || 'unfinished'
+    }
+  } else {
+    currentWork.value = null
+  }
+
+  gridSize.value = tempData.gridSize
+  const tempFilePath = await arrayBufferToTempFilePath(tempData.pngBuffer)
+  const editorData = await pngToPixelArtData(tempFilePath, tempData.gridSize)
+  pixelData.value = editorData.pixelData
+  gridSize.value = editorData.gridSize
+  return true
+}
+
+const initCanvas = async (): Promise<void> => {
+  const loaded = await applyTempData()
+  if (!loaded) {
+    const initialData = new Array(gridSize.value * gridSize.value).fill('#FFFFFF')
+    pixelData.value = initialData
+  }
+  renderPixelData()
+}
+
+// 首次挂载时 onMounted 与 useDidShow 都会触发，用 promise 去重避免重复初始化
+let initPromise: Promise<void> | null = null
+
+const ensureCanvasInit = (): Promise<void> => {
+  if (!initPromise) {
+    initPromise = initCanvas()
+  } else {
+    // 页面已初始化过：仅当存在临时数据（从作品页跳转继续编辑）时加载
+    applyTempData().then((loaded) => {
+      if (loaded) renderPixelData()
+    })
+  }
+  return initPromise
+}
+
 onMounted(() => {
 
-  initPixel()
+  ensureCanvasInit()
   
+  // H5 端窗口尺寸变化（调整窗口、旋转屏幕）后重新计算画布尺寸
+  if (isH5) {
+    window.addEventListener('resize', calculateCanvasSize)
+    window.addEventListener('orientationchange', checkWindowSize)
+    window.addEventListener('resize', checkWindowSize)
+    
+    // 初始化检查
+    checkWindowSize()
+  }
+})
 
+useDidShow(() => {
+  ensureCanvasInit()
+})
+
+onUnmounted(() => {
+  if (isH5) {
+    window.removeEventListener('resize', calculateCanvasSize)
+    window.removeEventListener('orientationchange', checkWindowSize)
+    window.removeEventListener('resize', checkWindowSize)
+  }
 })
 
 defineExpose({

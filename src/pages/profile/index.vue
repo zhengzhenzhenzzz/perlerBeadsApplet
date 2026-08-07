@@ -51,7 +51,12 @@
               </view>
             </view>
             <view class="work-info">
-              <text class="work-title">{{ item.title }}</text>
+              <view class="work-title-row">
+                <text class="work-title">{{ item.title }}</text>
+                <view class="delete-btn" @tap.stop="handleDelete(item)">
+                  <MIcon name="delete" :size="24" color="#8C8780" />
+                </view>
+              </view>
               <view class="work-meta">
                 <view class="tag-list">
                   <text v-for="(tag, idx) in item.tags.slice(0, 2)" :key="idx" class="tag">{{ tag }}</text>
@@ -103,7 +108,7 @@ import MIcon from '@/components/MIcon/index.vue'
 import './index.scss'
 import { getPixelArtList, deletePixelArt, PixelArtItemStorage, PixelArtStatus, updatePixelArt } from '@/utils/storage'
 import { useEditorTempStore } from '@/stores/editorTemp'
-import { arrayBufferToTempFilePath, upscalePixelArtPng, checkTempFileExists } from '@/utils/pixelArt'
+import { arrayBufferToTempFilePath, upscalePixelArtPng, checkTempFileExists, saveImageToPhotosAlbum } from '@/utils/pixelArt'
 import { base64ToArrayBuffer } from '@/utils/base64'
 
 interface DisplayItem extends PixelArtItemStorage {
@@ -238,22 +243,7 @@ const handleCardLongPress = (item: DisplayItem) => {
       if (tapIndex === 0) {
         handleViewDetail(item)
       } else if (tapIndex === 1) {
-        try {
-          Taro.showLoading({ title: '加载中...' })
-          const { setTempData } = useEditorTempStore()
-          setTempData({
-            gridSize: item.gridSize,
-            pngBuffer: base64ToArrayBuffer(item.pngData),
-            pngTempPath: item.pngTempPath
-          })
-          Taro.hideLoading()
-          Taro.switchTab({
-            url: '/pages/editor/index'
-          })
-        } catch (error) {
-          Taro.hideLoading()
-          Taro.showToast({ title: '加载失败', icon: 'error' })
-        }
+        handleContinueEdit(item)
       } else if (tapIndex === 2) {
         handleExport(item)
       } else if (tapIndex === 3) {
@@ -265,7 +255,44 @@ const handleCardLongPress = (item: DisplayItem) => {
   })
 }
 
+const handleContinueEdit = async (item: DisplayItem) => {
+  try {
+    Taro.showLoading({ title: '加载中...' })
+    const { setTempData } = useEditorTempStore()
+
+    // 优先使用 pngData；H5 端旧数据可能因 base64 编码问题导致 pngData 为空，回退使用缩略图
+    let pngBuffer: ArrayBuffer
+    if (item.pngData) {
+      pngBuffer = base64ToArrayBuffer(item.pngData)
+    } else {
+      const base64 = (item.pngTempPath || '').split(',')[1] || item.pngTempPath || ''
+      pngBuffer = base64ToArrayBuffer(base64)
+    }
+
+    setTempData({
+      gridSize: item.gridSize,
+      pngBuffer,
+      pngTempPath: item.pngTempPath,
+      workId: item.id,
+      title: item.title,
+      description: item.description,
+      tags: item.tags,
+      status: item.status
+    })
+    Taro.hideLoading()
+    Taro.switchTab({ url: '/pages/editor/index' })
+  } catch (error) {
+    Taro.hideLoading()
+    Taro.showToast({ title: '加载失败', icon: 'error' })
+  }
+}
+
 const handleViewDetail = (item: DisplayItem) => {
+  // 进行中的作品点击后直接进入编辑器继续创作
+  if (item.status === 'unfinished') {
+    handleContinueEdit(item)
+    return
+  }
   try {
     Taro.setStorageSync(`pixelart_detail_${item.id}`, item)
     Taro.navigateTo({
@@ -296,41 +323,8 @@ const handleExport = async (item: DisplayItem) => {
     Taro.showLoading({ title: '导出中...' })
     const tempFilePath = await arrayBufferToTempFilePath(base64ToArrayBuffer(item.pngData))
 
-    await new Promise<void>((resolve, reject) => {
-      Taro.saveImageToPhotosAlbum({
-        filePath: tempFilePath,
-        success: () => resolve(),
-        fail: (err) => {
-          if (err.errMsg.includes('auth deny')) {
-            Taro.showModal({
-              title: '提示',
-              content: '需要您授权保存相册权限',
-              success: (modalRes) => {
-                if (modalRes.confirm) {
-                  Taro.openSetting({
-                    success: (settingRes) => {
-                      if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                        Taro.saveImageToPhotosAlbum({
-                          filePath: tempFilePath,
-                          success: () => resolve(),
-                          fail: reject
-                        })
-                      } else {
-                        reject(new Error('用户拒绝授权'))
-                      }
-                    }
-                  })
-                } else {
-                  reject(new Error('用户拒绝授权'))
-                }
-              }
-            })
-          } else {
-            reject(err)
-          }
-        }
-      })
-    })
+    // 保存相册（小程序）/ 下载图片（H5）的分支逻辑已收敛在 saveImageToPhotosAlbum 内部
+    await saveImageToPhotosAlbum(tempFilePath)
 
     Taro.hideLoading()
     Taro.showToast({ title: '导出成功', icon: 'success' })
