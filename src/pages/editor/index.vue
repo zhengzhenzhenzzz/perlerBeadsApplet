@@ -55,7 +55,7 @@ import DrawPanel from './components/drawPanel/index.vue'
 import ToolArea from './components/toolArea/index.vue'
 import MIcon from '@/components/MIcon/index.vue'
 import { isH5 } from '@/utils/platform'
-import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData} from '@/utils/pixelArt'
+import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData, transferPixelData, countPixelsLostOnResize} from '@/utils/pixelArt'
 import { useEditorTempStore,EditorTempData } from '@/stores/editorTemp'
 import { base64ToArrayBuffer, arrayBufferToBase64 } from '@/utils/base64'
 import type { PixelArtStatus } from '@/utils/storage'
@@ -266,11 +266,60 @@ const handlePixelDataUpdate = (data: string[]) => {
   saveToHistory()
 }
 
-const handleGridSizeChange = (size: number) => {
+/** 画布是否为空（全部为白色底色，即用户尚未绘制任何内容） */
+const isCanvasEmpty = () => {
+  if (pixelData.value.length === 0) return true
+  return pixelData.value.every(color => !color || color.toUpperCase() === '#FFFFFF')
+}
+
+/**
+ * 应用新的画布尺寸
+ * @param size - 目标网格边长
+ * @param keepPattern - 是否保留原图案（true 时保持原尺寸与原位置，居中对齐搬运）
+ */
+const applyGridSize = (size: number, keepPattern: boolean) => {
+  const prevSize = gridSize.value
+  const prevData = pixelData.value
+
   gridSize.value = size
-  pixelData.value = new Array(size * size).fill('#FFFFFF')
+  pixelData.value = keepPattern
+    ? transferPixelData(prevData, prevSize, size)
+    : new Array(size * size).fill('#FFFFFF')
+
   historyStack.value = []
   historyIndex.value = -1
+  renderPixelData()
+}
+
+const handleGridSizeChange = (size: number) => {
+  if (size === gridSize.value) return
+
+  // 空画布无内容可丢失，直接切换，避免无谓打扰
+  if (isCanvasEmpty()) {
+    applyGridSize(size, false)
+    return
+  }
+
+  // 缩小画布时，居中裁切会丢掉超出新边界的已绘制像素，提示具体数量
+  const lostCount = countPixelsLostOnResize(pixelData.value, gridSize.value, size)
+  const keepHint = lostCount > 0
+    ? `保留时图案位置和大小不变、居中放置，但有 ${lostCount} 个已绘制的像素超出新画布范围会被裁掉。`
+    : '保留时图案位置和大小不变，居中放置在新画布上。'
+
+  Taro.showModal({
+    title: '切换画布尺寸',
+    content: `当前画布已有图案，切换到 ${size}×${size} 后是否保留？${keepHint}`,
+    confirmText: '保留图案',
+    cancelText: '清空画布',
+    success: (res) => {
+      if (res.confirm) {
+        applyGridSize(size, true)
+      } else if (res.cancel) {
+        applyGridSize(size, false)
+      }
+      // 弹窗被其他方式关闭时不改变尺寸，工具栏高亮跟随 props.gridSize 保持原状
+    }
+  })
 }
 
 const handleToolChange = (tool: string) => {

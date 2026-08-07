@@ -12,6 +12,59 @@ const HIGH_QUALITY_SIZE = 256
 // H5 端通过 createObjectURL 生成的有效临时地址集合，用于校验缩略图是否仍然可用
 const activeBlobUrls = new Set<string>()
 
+/**
+ * 将像素数据搬运到新的网格尺寸（保持原尺寸、原位置，居中对齐）
+ * 每个像素保持原本的大小，不做任何缩放，图案整体居中放置在新画布上：
+ * 放大时原图案居中，四周补白；缩小时超出新边界的四周像素被裁掉
+ * @param pixelData - 原像素颜色数组（长度应为 fromSize * fromSize）
+ * @param fromSize - 原网格边长
+ * @param toSize - 目标网格边长
+ * @returns 长度为 toSize * toSize 的新像素颜色数组
+ */
+export function transferPixelData(pixelData: string[], fromSize: number, toSize: number): string[] {
+  const result = new Array(toSize * toSize).fill('#FFFFFF')
+  if (fromSize <= 0 || toSize <= 0) return result
+
+  // 目标坐标 = 源坐标 + offset，offset 为负表示源图案四周被裁切
+  const offset = Math.floor((toSize - fromSize) / 2)
+  const startSrc = Math.max(0, -offset)
+  const endSrc = Math.min(fromSize, toSize - offset)
+
+  for (let srcRow = startSrc; srcRow < endSrc; srcRow++) {
+    for (let srcCol = startSrc; srcCol < endSrc; srcCol++) {
+      const dstIdx = (srcRow + offset) * toSize + (srcCol + offset)
+      result[dstIdx] = pixelData[srcRow * fromSize + srcCol] || '#FFFFFF'
+    }
+  }
+  return result
+}
+
+/**
+ * 统计缩小画布时会被裁掉的已绘制像素数量（非白色像素）
+ * @param pixelData - 原像素颜色数组
+ * @param fromSize - 原网格边长
+ * @param toSize - 目标网格边长
+ * @returns 会丢失的已绘制像素个数；放大或尺寸不变时为 0
+ */
+export function countPixelsLostOnResize(pixelData: string[], fromSize: number, toSize: number): number {
+  if (toSize >= fromSize || fromSize <= 0 || toSize <= 0) return 0
+
+  const offset = Math.floor((toSize - fromSize) / 2)
+  const startSrc = Math.max(0, -offset)
+  const endSrc = Math.min(fromSize, toSize - offset)
+
+  let lost = 0
+  for (let row = 0; row < fromSize; row++) {
+    const rowKept = row >= startSrc && row < endSrc
+    for (let col = 0; col < fromSize; col++) {
+      if (rowKept && col >= startSrc && col < endSrc) continue
+      const color = pixelData[row * fromSize + col]
+      if (color && color.toUpperCase() !== '#FFFFFF') lost++
+    }
+  }
+  return lost
+}
+
 function calculateCanvasSize(gridSize: number, highQuality: boolean): number {
   if (!highQuality) {
     return gridSize

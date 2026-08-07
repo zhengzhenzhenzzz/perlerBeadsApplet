@@ -228,8 +228,9 @@ const handleColorSelect = (color: string) => {
   }
 }
 
+// 只发出事件，由父组件确认（可能弹窗询问是否保留图案）后回传 gridSize，
+// 高亮状态跟随 props.gridSize 变化，避免用户取消时高亮与实际画布尺寸不一致
 const handleGridSizeChange = (size: number) => {
-  currentGridSize.value = size
   emit('update:gridSize', size)
 }
 
