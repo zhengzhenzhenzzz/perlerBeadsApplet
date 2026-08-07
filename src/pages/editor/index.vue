@@ -73,7 +73,13 @@ const hideCanvas = ref(false)
 const currentColorPalette = ref<string[]>([])
 const isMobileSimulator = ref(false)
 
-const historyStack = ref<string[][]>([])
+/** 历史记录条目：同时保存网格尺寸，使撤销/重做能跨尺寸切换回退 */
+interface HistoryEntry {
+  gridSize: number
+  pixelData: string[]
+}
+
+const historyStack = ref<HistoryEntry[]>([])
 const historyIndex = ref(-1)
 const MAX_HISTORY = 50
 
@@ -82,14 +88,17 @@ const handleBack = () => {
 }
 
 const saveToHistory = () => {
-  const currentData = [...pixelData.value]
-  
+  const entry: HistoryEntry = {
+    gridSize: gridSize.value,
+    pixelData: [...pixelData.value]
+  }
+
   if (historyIndex.value < historyStack.value.length - 1) {
     historyStack.value = historyStack.value.slice(0, historyIndex.value + 1)
   }
-  
-  historyStack.value.push(currentData)
-  
+
+  historyStack.value.push(entry)
+
   if (historyStack.value.length > MAX_HISTORY) {
     historyStack.value.shift()
   } else {
@@ -97,13 +106,32 @@ const saveToHistory = () => {
   }
 }
 
+/**
+ * 还原到指定的历史记录条目
+ * 尺寸有变化时先切换 gridSize，等 DrawPanel 依据新尺寸重建缓冲后再写入像素数据，
+ * 否则 DrawPanel 内 watch(gridSize) 的重置逻辑会把刚写入的数据覆盖成空白
+ */
+const restoreHistoryEntry = (entry: HistoryEntry) => {
+  const sizeChanged = entry.gridSize !== gridSize.value
+  gridSize.value = entry.gridSize
+  pixelData.value = [...entry.pixelData]
+
+  if (sizeChanged) {
+    nextTick(() => {
+      calculateCanvasSize()
+      drawPanelRef.value?.setPixelData(pixelData.value)
+    })
+  } else {
+    drawPanelRef.value?.setPixelData(pixelData.value)
+  }
+}
+
 const handleUndo = () => {
   if (historyIndex.value > 0) {
     historyIndex.value--
-    const prevData = historyStack.value[historyIndex.value]
-    if (prevData && drawPanelRef.value) {
-      drawPanelRef.value.setPixelData(prevData)
-      pixelData.value = prevData
+    const prevEntry = historyStack.value[historyIndex.value]
+    if (prevEntry) {
+      restoreHistoryEntry(prevEntry)
     }
   } else {
     Taro.showToast({ title: '无法撤销', icon: 'none', duration: 1000 })
@@ -113,10 +141,9 @@ const handleUndo = () => {
 const handleRedo = () => {
   if (historyIndex.value < historyStack.value.length - 1) {
     historyIndex.value++
-    const nextData = historyStack.value[historyIndex.value]
-    if (nextData && drawPanelRef.value) {
-      drawPanelRef.value.setPixelData(nextData)
-      pixelData.value = nextData
+    const nextEntry = historyStack.value[historyIndex.value]
+    if (nextEntry) {
+      restoreHistoryEntry(nextEntry)
     }
   } else {
     Taro.showToast({ title: '无法重做', icon: 'none', duration: 1000 })
@@ -215,16 +242,12 @@ const handleImport = () => {
           currentColorPalette.value.length > 0 ? currentColorPalette.value : undefined
         )
         
-        if (result.gridSize !== gridSize.value) {
-          gridSize.value = result.gridSize
-          pixelData.value = result.pixelData
-          historyStack.value = []
-          historyIndex.value = -1
-        } else {
-          pixelData.value = result.pixelData
-        }
-        
+        // 历史记录已带 gridSize，导入即使改变尺寸也无需清空栈，用户可撤销回导入前的状态
+        gridSize.value = result.gridSize
+        pixelData.value = result.pixelData
+
         nextTick(() => {
+          calculateCanvasSize()
           if (drawPanelRef.value) {
             drawPanelRef.value.setPixelData(pixelData.value)
           }
@@ -274,6 +297,7 @@ const isCanvasEmpty = () => {
 
 /**
  * 应用新的画布尺寸
+ * 尺寸切换会作为一条历史记录入栈，用户后悔时可点撤销回到切换前的尺寸与图案
  * @param size - 目标网格边长
  * @param keepPattern - 是否保留原图案（true 时保持原尺寸与原位置，居中对齐搬运）
  */
@@ -286,9 +310,11 @@ const applyGridSize = (size: number, keepPattern: boolean) => {
     ? transferPixelData(prevData, prevSize, size)
     : new Array(size * size).fill('#FFFFFF')
 
-  historyStack.value = []
-  historyIndex.value = -1
-  renderPixelData()
+  saveToHistory()
+  nextTick(() => {
+    calculateCanvasSize()
+    drawPanelRef.value?.setPixelData(pixelData.value)
+  })
 }
 
 const handleGridSizeChange = (size: number) => {
